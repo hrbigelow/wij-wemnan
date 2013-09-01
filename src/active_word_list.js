@@ -40,7 +40,7 @@ function wordCmp (a, b) {
 // <query> on a sorted list of <words>
 function findBoundsNoncased(words, query) {
     var queryLc = query.toLowerCase(),
-    queryLast = queryLc + 'z',
+    queryLast = queryLc + String.fromCharCode(255),
     lower = lower_bound(words, 0, words.length, queryLc, wordCmp),
     upper = upper_bound(words, lower, words.length, queryLast, wordCmp);
     return { start: lower, end: upper }
