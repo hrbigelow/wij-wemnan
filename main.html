@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="src/jquery-2.0.2.js"></script>
+    <script src="src/binary_search.js"></script>
+    <script src="src/active_word_list.js"></script>
+  </head>
+  <body>
+    <input id="isearch" type="text" placeholder="Enter a gene name..."></input>
+    <!-- <input type="button" id="init" value="Initialize"></input> -->
+    <span><i>Up to 20 genes will be listed below, depending on the search</i></span>
+    <ol id="results"></ol>
+    <script>
+      loadWords();
+      initWordNodes();
+      $('#isearch')[0].oninput = 
+      makeUpdateListener($('#results')[0], wordNodes, wordsLower, 20);
+      $('#isearch').triggerHandler('input');
+      $('#isearch').focus();
+    </script>
+  </body>
+</html>
