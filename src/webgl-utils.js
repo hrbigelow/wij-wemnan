@@ -14,11 +14,14 @@ function createShader(str, type) {
 }
 
 
-function loadImage(filename, index, callback) {
+// create an image.  pass in the callback to this function
+// for delayed initialization of the image
+function createImage(filename, index, callback) {
     var img = new Image();
     function onload() { callback(img, index) }
     img.onload = onload;
     img.src = filename;
+    return img;
 }
 
 
@@ -82,15 +85,15 @@ function loadFile(file, callback, noCache, isJson) {
 // fragment shaders from paths vs and fs, compiles and links it,
 // returns the program and invokes the given callback once the program
 // is ready.
-function loadProgram(vs, fs, textureFiles, callback, gl) {
+function createProgram(vs, fs, textureFiles, callback, gl) {
 	var program = gl.createProgram(),
     i;
     
     // this bizarre code is required to make 'every' fail
     // when merely testing the 'falsy' quality of undefined.
-    program.images = [];
+    program.textures = [];
     for (i = 0; i != textureFiles.length; i += 1) {
-        program.images.push(undefined);
+        program.textures.push(undefined);
     }
     
     
@@ -98,7 +101,7 @@ function loadProgram(vs, fs, textureFiles, callback, gl) {
 		program.vshaderSource = str;
 		if (program.fshaderSource) {
 			linkProgram(program, gl);
-            loadTextures(textureFiles, callback);
+            createTextures(textureFiles);
 		}
 	}
     
@@ -106,46 +109,49 @@ function loadProgram(vs, fs, textureFiles, callback, gl) {
 		program.fshaderSource = str;
 		if (program.vshaderSource) {
 			linkProgram(program, gl);
-            loadTextures(textureFiles, callback);
+            createTextures(textureFiles);
 		}
 	}
+
     function imageLoaded(img, index) {
-        program.images[index] = img;
         program.textures[index] = createTexture(img, gl);
-        if (program.images.every(function (el, i, a) { return el })) {
+        if (program.textures.every(function (el, i, a) { return el })) {
             callback(program, gl);
         }    
+    }
+    function createTextures(textureFiles) {
+        program.images = textureFiles.map(function(filename, index) {
+            return createImage(filename, index, imageLoaded);
+        });
     }
     
 	loadFile(vs, vshaderLoaded, true);
 	loadFile(fs, fshaderLoaded, true);
-    textureFiles.forEach(function(filename, index) {
-        loadImage(filename, index, imageLoaded);
-    });
+    
                          
 	return program;
 }
 
 
-// this doesn't necessarily need to be part of the program -- it only
-// modifies the gl context itself and returns handles to its state.
-// however, the program will need to hold onto the handles in order to
-// use them.
-function loadTexture(filename, textureIndex, callback, gl) {
-    var tex = gl.createTexture();
-    var img = new Image();
-    img.onload = function() {
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.bindTexture(gl.TEXTURE0, null);
-    };
-    img.src = filename;
-    return tex;
+// initialize the gl context
+function getGLContext(canvas) {
+    // Initialize the global variable gl to null.
+    var gl = null;
+    
+    try {
+        gl = canvas.getContext("webgl") 
+            || canvas.getContext("experimental-webgl");
+    }
+    catch(e) {}
+    
+    // If we don't have a GL context, give up now
+    if (!gl) {
+        alert("Unable to initialize WebGL. Your browser may not support it.");
+    }
+    return gl;
 }
+
+
 
 
 
