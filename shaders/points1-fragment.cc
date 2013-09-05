@@ -3,7 +3,7 @@ precision float mediump;
 varying lowp vec4 vColor;
 varying lowp float vShape;
 
-uniform Sampler2D tex[3];
+uniform sampler2D tex[3];
 
 void main(void) {
     lowp float tex_alpha;

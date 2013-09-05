@@ -1,11 +1,11 @@
-var SOMBRERO = (function (my) {
+define(function(){
 
     window.onerror = function(msg, url, lineno) {
 	    alert(url + '(' + lineno + '): ' + msg);
     }
 
     // create a shader of a given type from a string source
-    createShader(str, type) {
+    function createShader(str, type) {
 	    var shader = gl.createShader(type);
 	    gl.shaderSource(shader, str);
 	    gl.compileShader(shader);
@@ -57,39 +57,41 @@ var SOMBRERO = (function (my) {
     }
 
 
-    function loadFile(file, callback, noCache, isJson) {
-	    var request = new XMLHttpRequest();
-	    request.onreadystatechange = function() {
-		    if (request.readyState == 1) {
-			    if (isJson) {
-				    request.overrideMimeType('application/json');
-			    }
-			    request.send();
-		    } else if (request.readyState == 4) {
-			    if (request.status == 200) {
-				    callback(request.responseText);
-			    } else if (request.status == 404) {
-				    throw 'File "' + file + '" does not exist.';
-			    } else {
-				    throw 'XHR error ' + request.status + '.';
-			    }
-		    }
-	    };
-	    var url = file;
-	    if (noCache) {
-		    url += '?' + (new Date()).getTime();
-	    }
-	    request.open('GET', url, true);
-    }
+    // function loadFile(file, callback, noCache, isJson) {
+	//     var request = new XMLHttpRequest();
+	//     request.onreadystatechange = function() {
+	// 	    if (request.readyState == 1) {
+	// 		    if (isJson) {
+	// 			    request.overrideMimeType('application/json');
+	// 		    }
+	// 		    request.send();
+	// 	    } else if (request.readyState == 4) {
+	// 		    if (request.status == 200) {
+	// 			    callback(request.responseText);
+	// 		    } else if (request.status == 404) {
+	// 			    throw 'File "' + file + '" does not exist.';
+	// 		    } else {
+	// 			    throw 'XHR error ' + request.status + '.';
+	// 		    }
+	// 	    }
+	//     };
+	//     var url = file;
+	//     if (noCache) {
+	// 	    url += '?' + (new Date()).getTime();
+	//     }
+	//     request.open('GET', url, true);
+    // }
 
-    my.glutils = {
-
+    return {
+        
         // creates a program, asynchronously loads source code for vertex and
         // fragment shaders from paths vs and fs, compiles and links it,
         // returns the program and invokes the given callback once the program
         // is ready.
-        createProgram: function(vs, fs, textureFiles, callback, gl) {
+        createProgram: function(vss, fss, textureFiles, callback, gl) {
 	        var program = gl.createProgram(),
+	        vshader = createShader(vss, gl.VERTEX_SHADER),
+	        fshader = createShader(fss, gl.FRAGMENT_SHADER),
             i;
             
             // this bizarre code is required to make 'every' fail
@@ -99,39 +101,21 @@ var SOMBRERO = (function (my) {
                 program.textures.push(undefined);
             }
             
-            
-	        function vshaderLoaded(str) {
-		        program.vshaderSource = str;
-		        if (program.fshaderSource) {
-			        linkProgram(program, gl);
-                    createTextures(textureFiles);
-		        }
-	        }
-            
-	        function fshaderLoaded(str) {
-		        program.fshaderSource = str;
-		        if (program.vshaderSource) {
-			        linkProgram(program, gl);
-                    createTextures(textureFiles);
-		        }
-	        }
+	        gl.attachShader(program, vshader);
+	        gl.attachShader(program, fshader);
+            linkProgram(program, gl);
 
+            program.images = textureFiles.map(function(filename, index) {
+                return createImage(filename, index, imageLoaded);
+            });
+            
             function imageLoaded(img, index) {
                 program.textures[index] = createTexture(img, gl);
                 if (program.textures.every(function (el, i, a) { return el })) {
                     callback(program, gl);
                 }    
             }
-            function createTextures(textureFiles) {
-                program.images = textureFiles.map(function(filename, index) {
-                    return createImage(filename, index, imageLoaded);
-                });
-            }
-            
-	        loadFile(vs, vshaderLoaded, true);
-	        loadFile(fs, fshaderLoaded, true);
-            
-            
+
 	        return program;
         },
 
@@ -154,8 +138,7 @@ var SOMBRERO = (function (my) {
             return gl;
         }
     }
-    return my;
-}(SOMBRERO || {}));
+});
 
 
 
