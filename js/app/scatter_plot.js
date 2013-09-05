@@ -1,7 +1,7 @@
 define([
-    'webgl_utils',
-    'text!src/points1-vertex.cc',
-    'text!src/points1-fragment.cc'
+    'app/webgl_utils',
+    'text!shaders/points1-vertex.cc',
+    'text!shaders/points1-fragment.cc'
 ], function(glUtils, vshaderSource, fshaderSource) {
 
     function initScatterProgram(glprog, gl) {
@@ -39,14 +39,14 @@ define([
     }
     
     return {
-        glprog: undefined,
+        // glprog: undefined,
         
         init: function(gl) {
             this.glprog = glUtils.createProgram(vshaderSource,
-                                                fshaderSource
-                                                ['img/sprite1.png',
-                                                 'img/sprite2.png',
-                                                 'img/sprite3.png'],
+                                                fshaderSource,
+                                                ['img/circle.png',
+                                                 'img/triangle.png',
+                                                 'img/square.png'],
                                                 initScatterProgram,
                                                 gl);
         },

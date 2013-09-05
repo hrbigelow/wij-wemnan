@@ -10,7 +10,7 @@ define(function(){
 	    gl.shaderSource(shader, str);
 	    gl.compileShader(shader);
 	    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-		    throw gl.getShaderInfoLog(shader);
+		    throw gl.getShaderInfoLog(shader) + ', type: ' + type;
 	    }
 	    return shader;
     }
@@ -45,16 +45,16 @@ define(function(){
     // after program source is loaded as string properties 'vshaderSource'
     // and 'fshaderSource', creates and attaches the shaders and links the
     // program.
-    function linkProgram(program, gl) {
-	    var vshader = createShader(program.vshaderSource, gl.VERTEX_SHADER);
-	    var fshader = createShader(program.fshaderSource, gl.FRAGMENT_SHADER);
-	    gl.attachShader(program, vshader);
-	    gl.attachShader(program, fshader);
-	    gl.linkProgram(program);
-	    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-		    throw gl.getProgramInfoLog(program);
-	    }
-    }
+    // function linkProgram(program, gl) {
+	//     var vshader = createShader(program.vshaderSource, gl.VERTEX_SHADER);
+	//     var fshader = createShader(program.fshaderSource, gl.FRAGMENT_SHADER);
+	//     gl.attachShader(program, vshader);
+	//     gl.attachShader(program, fshader);
+	//     gl.linkProgram(program);
+	//     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+	// 	    throw gl.getProgramInfoLog(program) + ', program linking';
+	//     }
+    // }
 
 
     // function loadFile(file, callback, noCache, isJson) {
@@ -93,7 +93,14 @@ define(function(){
 	        vshader = createShader(vss, gl.VERTEX_SHADER),
 	        fshader = createShader(fss, gl.FRAGMENT_SHADER),
             i;
-            
+
+	        gl.attachShader(program, vshader);
+	        gl.attachShader(program, fshader);
+            gl.linkProgram(program);
+	        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+		        throw gl.getProgramInfoLog(program) + ', program linking';
+	        }
+
             // this bizarre code is required to make 'every' fail
             // when merely testing the 'falsy' quality of undefined.
             program.textures = [];
@@ -101,10 +108,6 @@ define(function(){
                 program.textures.push(undefined);
             }
             
-	        gl.attachShader(program, vshader);
-	        gl.attachShader(program, fshader);
-            linkProgram(program, gl);
-
             program.images = textureFiles.map(function(filename, index) {
                 return createImage(filename, index, imageLoaded);
             });
