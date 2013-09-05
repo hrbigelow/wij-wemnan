@@ -28,15 +28,16 @@ define(function(){
 
 
     // create a new texture from an image object (after it has been loaded)
-    function createTexture(img, gl) {
+    function createTexture(img, index, gl) {
         var tex = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE0 + index);
         gl.bindTexture(gl.TEXTURE_2D, tex);
         // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
         gl.generateMipmap(gl.TEXTURE_2D);
-        gl.bindTexture(gl.TEXTURE0, null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
         return tex;
     }
 
@@ -84,10 +85,8 @@ define(function(){
 
     return {
         
-        // creates a program, asynchronously loads source code for vertex and
-        // fragment shaders from paths vs and fs, compiles and links it,
-        // returns the program and invokes the given callback once the program
-        // is ready.
+        // creates a compiled and linked program from shader source strings,
+        // within the 'gl' context given.
         createProgram: function(vss, fss, textureFiles, callback, gl) {
 	        var program = gl.createProgram(),
 	        vshader = createShader(vss, gl.VERTEX_SHADER),
@@ -113,7 +112,7 @@ define(function(){
             });
             
             function imageLoaded(img, index) {
-                program.textures[index] = createTexture(img, gl);
+                program.textures[index] = createTexture(img, index, gl);
                 if (program.textures.every(function (el, i, a) { return el })) {
                     callback(program, gl);
                 }    

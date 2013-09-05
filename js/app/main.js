@@ -10,12 +10,14 @@ requirejs.config({
 
 requirejs([
     'app/scatter_plot',
-    'app/webgl_utils'
-], function(scatter, glUtils) {
+    'app/webgl_utils',
+    'app/random_points'
+], function(scatter, glUtils, randomPoints) {
     // scatter_plot and all of its dependencies are now loaded here
     // and may be used.
 
     console.log('hello');
     window.scatter = scatter;
     window.glUtils = glUtils;
+    window.randomPoints = randomPoints;
 });
