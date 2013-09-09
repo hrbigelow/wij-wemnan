@@ -9,9 +9,11 @@ define([
     function initScatterProgram(glprog, gl) {
 
         // set GL global state
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clearColor(0.0, 0.0, 0.0, 0.0);
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
+        gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
         gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 
         gl.useProgram(glprog);
@@ -36,9 +38,6 @@ define([
         glprog.mainBuf = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, glprog.mainBuf);
 
-        // load default data
-        // gl.bufferData(gl.ARRAY_BUFFER, randomPoints.randomPoints(100), gl.STATIC_DRAW);
-
         // define pointer semantics
         gl.vertexAttribPointer(glprog.pos, 3, gl.FLOAT, false, 36, 0);
         gl.vertexAttribPointer(glprog.color, 4, gl.FLOAT, false, 36, 12);
@@ -56,8 +55,8 @@ define([
         init: function(gl) {
             this.glprog = glUtils.createProgram(vshaderSource,
                                                 fshaderSource,
-                                                ['img/circle.png',
-                                                 'img/triangle.png',
+                                                ['img/circle_orig.png',
+                                                 'img/triangle_orig.png',
                                                  'img/square.png'],
                                                 initScatterProgram,
                                                 gl);
@@ -85,10 +84,19 @@ define([
 
         // set the scale and offset uniforms in order so that the
         // real position coordinates are scaled to the [-1, 1] x [-1, 1] interval
+        // wanted:  a linear transformation for scale M and offset B such that
+        // x' = Mx + B
+        // where 
         setZoom: function(gl, minX, maxX, minY, maxY) {
+            var Mx = 2 / (maxX - minX),
+            My = 2 / (maxY - minY),
+            Bx = Mx * minX - 1,
+            By = My * minY - 1;
+            
             gl.useProgram(this.glprog);
-            gl.uniform3f(this.glprog.scale, 2 / (maxX - minX), 2 / (maxY - minY), 1.0);
-            gl.uniform3f(this.glprog.offset, -2 * (minX + 1), -2 * (minY + 1), 0.0);
+            
+            gl.uniform3f(this.glprog.scale, Mx, My, 1.0);
+            gl.uniform3f(this.glprog.offset, Bx, By, 0.0);
         }
     }
 });

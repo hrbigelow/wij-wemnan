@@ -3,8 +3,8 @@ attribute vec4 color;
 attribute float shape;
 attribute float size;
     
-varying lowp vec4 vColor;
-varying lowp float vShape;
+varying mediump vec4 vColor;
+varying float vShape;
 
 // easy way to modify size of points all at once.
 uniform float uPointFactor;

@@ -49,6 +49,7 @@ define({
             attr[p+4] = Math.random(); // g
             attr[p+5] = Math.random(); // b
             attr[p+6] = Math.random(); // a
+            // attr[p+7] = 0;
             attr[p+7] = c.randomTexture(Math.random()); // texture (t)
             attr[p+8] = c.randomSize(Math.random()); // size (s)
 
