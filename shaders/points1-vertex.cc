@@ -16,7 +16,10 @@ uniform vec3 offset;
 
 void main(void) {
     gl_Position = vec4(pos * scale + offset, 1.0);
+
     gl_PointSize = size * uPointFactor;
+
     vColor = color; // modify this as well?
+
     vShape = shape;
 }

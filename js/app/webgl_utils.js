@@ -42,47 +42,6 @@ define(function(){
     }
 
 
-
-    // after program source is loaded as string properties 'vshaderSource'
-    // and 'fshaderSource', creates and attaches the shaders and links the
-    // program.
-    // function linkProgram(program, gl) {
-	//     var vshader = createShader(program.vshaderSource, gl.VERTEX_SHADER);
-	//     var fshader = createShader(program.fshaderSource, gl.FRAGMENT_SHADER);
-	//     gl.attachShader(program, vshader);
-	//     gl.attachShader(program, fshader);
-	//     gl.linkProgram(program);
-	//     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-	// 	    throw gl.getProgramInfoLog(program) + ', program linking';
-	//     }
-    // }
-
-
-    // function loadFile(file, callback, noCache, isJson) {
-	//     var request = new XMLHttpRequest();
-	//     request.onreadystatechange = function() {
-	// 	    if (request.readyState == 1) {
-	// 		    if (isJson) {
-	// 			    request.overrideMimeType('application/json');
-	// 		    }
-	// 		    request.send();
-	// 	    } else if (request.readyState == 4) {
-	// 		    if (request.status == 200) {
-	// 			    callback(request.responseText);
-	// 		    } else if (request.status == 404) {
-	// 			    throw 'File "' + file + '" does not exist.';
-	// 		    } else {
-	// 			    throw 'XHR error ' + request.status + '.';
-	// 		    }
-	// 	    }
-	//     };
-	//     var url = file;
-	//     if (noCache) {
-	// 	    url += '?' + (new Date()).getTime();
-	//     }
-	//     request.open('GET', url, true);
-    // }
-
     return {
         
         // creates a compiled and linked program from shader source strings,

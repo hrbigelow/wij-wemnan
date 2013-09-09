@@ -5,18 +5,18 @@ define({
         minSize: 3,
         sizeFactor: 30,
         nShapes: 3,
-        xmin: -100,
-        xmax: 520,
-        ymin: -320,
-        ymax: 9000,
+        xmin: -30,
+        xmax: 500,
+        ymin: -640,
+        ymax: 12349,
         zmin: 0,
-        zmax: 1,
+        zmax: 0,
         randomSize: function(rand) { return rand * this.sizeFactor + this.minSize },
         randomTexture: function(rand) { return Math.floor(rand * this.nShapes) },
         randomPos: function() { 
-            var r1 = Math.rand(),
-            r2 = Math.rand(),
-            r3 = Math.rand();
+            var r1 = Math.random(),
+            r2 = Math.random(),
+            r3 = Math.random();
             return {
                 x: this.xmin + r1 * (this.xmax - this.xmin),
                 y: this.ymin + r2 * (this.ymax - this.ymin),
