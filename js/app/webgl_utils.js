@@ -1,4 +1,6 @@
-define(function(){
+define([
+    'webgl_debug'
+], function(WebGLDebugUtils){
 
     window.onerror = function(msg, url, lineno) {
 	    alert(url + '(' + lineno + '): ' + msg);
@@ -97,7 +99,35 @@ define(function(){
                 alert("Unable to initialize WebGL. Your browser may not support it.");
             }
             return gl;
-        }
+        },
+
+        throwOnGLError: function(err, funcName, args) {
+            throw WebGLDebugUtils.glEnumToString(err) 
+                + " was caused by call to: " + funcName;
+        },
+
+
+        logAndValidate: function(functionName, args) {
+            function logGLCalls(functionName, args) {   
+                console.log("gl." + functionName + "(" + 
+                            WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")");   
+            }
+            
+            function validateUndef(functionName, args) {
+                for (var ii = 0; ii < args.length; ++ii) {
+                    if (args[ii] === undefined) {
+                        console.error("undefined passed to gl." + functionName + "(" +
+                                      WebGLDebugUtils.glFunctionArgsToString(functionName, args) + ")");
+                    }
+                }
+            }
+            
+            logGLCalls(functionName, args);
+            validateUndef(functionName, args);
+        },
+        
+        glDebug: WebGLDebugUtils
+        
     }
 });
 

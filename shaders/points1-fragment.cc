@@ -16,5 +16,4 @@ void main(void) {
 
     // simply use the texture as a transparency multiplier for the point
     gl_FragColor = vec4(vColor.r, vColor.g, vColor.b, vColor.a * tex_alpha);
-    // gl_FragColor = vColor;
 }

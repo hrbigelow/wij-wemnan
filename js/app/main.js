@@ -5,6 +5,15 @@ requirejs.config({
         app: '../app',
         shaders: '../../shaders'
     }
+    // shim: {
+    //     'makeDebugContext': {
+    //         deps: ['webgl_debug'],
+    //         init: function(utl) {
+    //             return utl;
+    //         }
+    //     }
+    // }
+
 });
 
 

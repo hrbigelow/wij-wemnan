@@ -10,11 +10,12 @@ define([
 
         // set GL global state
         gl.clearColor(0.0, 0.0, 0.0, 0.0);
-        gl.enable(gl.DEPTH_TEST);
-        gl.depthFunc(gl.LEQUAL);
+        gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+        gl.enable(gl.BLEND);
         gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
-        gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+        gl.disable(gl.DEPTH_TEST);
+        // gl.depthFunc(gl.LEQUAL);
 
         gl.useProgram(glprog);
         
@@ -28,7 +29,9 @@ define([
         glprog.pointFactor = gl.getUniformLocation(glprog, 'uPointFactor');
         glprog.scale = gl.getUniformLocation(glprog, 'scale');
         glprog.offset = gl.getUniformLocation(glprog, 'offset');
-        
+        glprog.tex = gl.getUniformLocation(glprog, 'tex');
+
+
         // enable vertex attributes
         gl.enableVertexAttribArray(glprog.pos);
         gl.enableVertexAttribArray(glprog.color);
@@ -45,7 +48,14 @@ define([
         gl.vertexAttribPointer(glprog.size, 1, gl.FLOAT, false, 36, 32);
 
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
+        
+        // bind the textures
+        for (var i = 0; i != glprog.textures.length; i += 1) { a[i] = i; }
+        gl.uniform1iv(prog.tex, a);
+        glprog.textures.forEach(function(s, i) {
+            gl.activeTexture(gl.TEXTURE0 + i);
+            gl.bindTexture(gl.TEXTURE_2D, s);
+        });
         
     }
     
@@ -69,9 +79,12 @@ define([
 
             this.loadPointsData(gl, rp.randomPoints(100));
             this.setZoom(gl, pc.xmin, pc.xmax, pc.ymin, pc.ymax);
-            gl.uniform1f(this.glprog.pointFactor, 1.0);
-        },
+            gl.uniform1f(prog.pointFactor, 1.0);
 
+            
+            
+        },
+        
         // should be called any time the data in scatterPoints changes
         // however, for slightly more quickly changing data, perhaps a
         // separate array should be used
