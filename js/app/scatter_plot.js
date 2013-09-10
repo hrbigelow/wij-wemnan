@@ -8,6 +8,8 @@ define([
     // this should only be called once during the program's lifetime
     function initScatterProgram(glprog, gl) {
 
+        var a = new Int32Array(glprog.textures.length);
+
         // set GL global state
         gl.clearColor(0.0, 0.0, 0.0, 0.0);
         gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
@@ -50,8 +52,9 @@ define([
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
         
         // bind the textures
+
         for (var i = 0; i != glprog.textures.length; i += 1) { a[i] = i; }
-        gl.uniform1iv(prog.tex, a);
+        gl.uniform1iv(glprog.tex, a);
         glprog.textures.forEach(function(s, i) {
             gl.activeTexture(gl.TEXTURE0 + i);
             gl.bindTexture(gl.TEXTURE_2D, s);
@@ -79,7 +82,7 @@ define([
 
             this.loadPointsData(gl, rp.randomPoints(100));
             this.setZoom(gl, pc.xmin, pc.xmax, pc.ymin, pc.ymax);
-            gl.uniform1f(prog.pointFactor, 1.0);
+            gl.uniform1f(this.glprog.pointFactor, 1.0);
 
             
             
