@@ -84,7 +84,7 @@ define([
                                                    gl);
 
                this.points = rp.randomPoints(100);
-               this.setZoom(gl, pc.xmin, pc.xmax, pc.ymin, pc.ymax);
+               this.setZoom(pc.xmin, pc.xmax, pc.ymin, pc.ymax);
            },
 
            // sets this.scale and this.offset to effect a [-1, 1] =>
