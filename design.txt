@@ -1,18 +1,44 @@
-three buffers
+The center selection problem
 
-1. visible buffer.
+Center selection is a feature in which the user paints a single
+contiguous area in the viewport (either a rectangular area or a
+free-form area) and all of the vertices whose center points overlap
+the user-specified selection area are marked as 'selected' and
+highlighted accordingly.
+
+The problem is made difficult by the fact that the center points may
+be on top of each other, and that we want this to work efficiently for
+on the order of a million points.
+
+Since the free-form area doesn't have any analytical definition, there
+seems, intuitively, no more simple a solution than to actually use the
+pixel buffer memory in the graphics card itself to define what is 'in'
+or 'out' of the user selection area.  Another motivation for using the
+GPU here is that a solution does exist, and that it is a
+parallelizable problem.
+
+The solution consists of a few different tricks. First, two conceptual
+spaces are used.  Second, color is used to encode a vertex's
+index. Third, texture sampling is used in a non-traditional way.
+
+The first conceptual space is equivalent to the user's visible space
+in the viewport. The second is 'index space', a buffer that is 1 x N
+pixels, N being the total number of vertices.
+
+Three buffers are used.
+
+1. plot area buffer (in the visible space)
 
 This is the plot the user sees.  The vertices are plotted with the
 given color, shape and size.  The positions are affine-transformed
 according to the user's choices.
 
-3. selection buffer.
+2. selection buffer (in the visible space)
 
-The buffer that holds the area the user has selected.  One question is
-whether to allow this to represent the entire set of areas selected by
-the user, or just the most recent contiguous area.
+This buffer is the same size as the plot area buffer and represents
+the current user-selected contiguous region.
 
-2. hitlist buffer.
+3. hitlist buffer (in the index space)
 
 This is the buffer that represents the entire set of vertices in a
 single line, one pixel per vertex.  The positions of the pixels match
@@ -20,13 +46,70 @@ the indices in the vertex array. The color signifies whether the
 vertex is 'selected' or not, based on a texture sampling of the
 selection buffer.
 
+4. selection texture (in the visible space)
 
-Since the set of already-selected vertices will be established at the
-completion of the previous user selected process, we need not worry
-about supporting a non-contiguous selection area in the selection
-buffer.  Instead, the selection buffer can simply represent one
-contiguous mouse-down / mouse-up event.  Either this will be a
-free-form area, or a rectangle.
+This is a memory area that gets populated with the selection buffer
+contents, but is limited to the maximum size of a texture. So, it is
+roughly centered around the selection buffer area.
+
+Workflow
+
+The workflow starts with the visible buffer drawn with vertices of
+various colors, shapes and sizes.  The selection buffer is empty. The
+hitlist buffer is empty.
+
+As the user starts dragging the pointer around on the canvas, an area
+is drawn on the selection buffer, either a rectangular arear or a
+free-form area.
+
+At regular intervals during the drawing operation, the following steps
+are performed:
+
+1. the texOrigin is recalculated based on the drawn user-selected
+area, so that the user-selected area can fit inside the 8192 x 8192
+(or texture-max-size) rectangle.
+
+2. the sub-rectangle of the selection buffer is copied into the
+selection texture.
+
+3. the selection texture is used as a sampler for the
+center-selection-{v,f} shaders to draw the selection buffer. Once
+drawn, the contents of the selection buffer define the selected
+vertices.
+
+4. the contents of the selection buffer are read back into CPU
+memory. JavaScript is used to then update the auxiliary data
+structures to mark these vertices as selected.
+
+5. using the auxiliary data structures, the plot area buffer is
+re-drawn (and or the DOM is updated to add SVG labels and such) to
+indicate the updated set of selected vertices.
+
+Once the user finishes drawing the selection area (mouse up), the
+workflow is complete.  No special considerations are needed at the end.
+
+However, one may wonder how the logic of 'new selection' vs 'add to
+selection' is handled. The behavior follows that in word-processing
+and the like.  That is, if the CTRL key is depressed when the user
+starts dragging, the logic means 'add-to-selection'.  Either way
+though, the workflow is the same, and it just means that.
+
+But, during the drawing operation, the user-selected area may shrink
+and grow repeatedly. Thus from one moment to the next, a given vertex
+may be selected, unselected, and then selected again, as part of that
+current selection workflow. How does this situation interact with the
+existence of vertices that were selected in a previous (and completed)
+workflow in the case of the 'add-to-selection' behavior?
+
+In order to support the 'add-to-selection' behavior in combination
+with the possibility of selection and subsequent de-selection of a
+vertex due to the changing shape and size of the current
+user-selection area, some consideration is needed.
+
+
+
+
+Texture size limit
 
 A problem arises.  The maximum texture size for a given platform is
 most likely smaller than the view port that is visible to the user.
@@ -37,10 +120,8 @@ just a single selection texture.  So, the solution should be the following:
 area.  (This may in fact also be visible to the user, composited with
 the main buffer)
 
-2.  Maintain a textureViewportOffset coordinate, the position of the
-texture origin within the viewport origin (both are upper-left-hand
-corners).  The position is given in pixels.  The initial value of
-textureOffset should be set to be:
+2.  Maintain a texOrigin coordinate, the position of the texture
+origin within the viewport.  The initial value of texOrigin is:
 
 texOrigin = min(viewSize - texSize, max(zero, drawStart, texSize/2))
 
@@ -48,12 +129,15 @@ in other words, set it so that the position where the user starts
 drawing the selection area lies in the center of the viewport, bounded
 of course by the limits of the viewport.  the variables are:
 
-texOrigin: position in viewport of the texture Origin corner
 viewSize: the vector describing the size of the viewport
+
 texSize: vector describing size of the texture
+
 zero: the zero vector
 
 drawStart: start position in the viewport where the user starts to
   draw the selection area.
+
+texOrigin: position in viewport of the texture Origin corner
 
 3. 
