@@ -1,0 +1,59 @@
+three buffers
+
+1. visible buffer.
+
+This is the plot the user sees.  The vertices are plotted with the
+given color, shape and size.  The positions are affine-transformed
+according to the user's choices.
+
+3. selection buffer.
+
+The buffer that holds the area the user has selected.  One question is
+whether to allow this to represent the entire set of areas selected by
+the user, or just the most recent contiguous area.
+
+2. hitlist buffer.
+
+This is the buffer that represents the entire set of vertices in a
+single line, one pixel per vertex.  The positions of the pixels match
+the indices in the vertex array. The color signifies whether the
+vertex is 'selected' or not, based on a texture sampling of the
+selection buffer.
+
+
+Since the set of already-selected vertices will be established at the
+completion of the previous user selected process, we need not worry
+about supporting a non-contiguous selection area in the selection
+buffer.  Instead, the selection buffer can simply represent one
+contiguous mouse-down / mouse-up event.  Either this will be a
+free-form area, or a rectangle.
+
+A problem arises.  The maximum texture size for a given platform is
+most likely smaller than the view port that is visible to the user.
+And, the selection procedure is much easier to write if it can rely on
+just a single selection texture.  So, the solution should be the following:
+
+1.  Maintain a viewport-sized buffer holding the current selection
+area.  (This may in fact also be visible to the user, composited with
+the main buffer)
+
+2.  Maintain a textureViewportOffset coordinate, the position of the
+texture origin within the viewport origin (both are upper-left-hand
+corners).  The position is given in pixels.  The initial value of
+textureOffset should be set to be:
+
+texOrigin = min(viewSize - texSize, max(zero, drawStart, texSize/2))
+
+in other words, set it so that the position where the user starts
+drawing the selection area lies in the center of the viewport, bounded
+of course by the limits of the viewport.  the variables are:
+
+texOrigin: position in viewport of the texture Origin corner
+viewSize: the vector describing the size of the viewport
+texSize: vector describing size of the texture
+zero: the zero vector
+
+drawStart: start position in the viewport where the user starts to
+  draw the selection area.
+
+3. 
