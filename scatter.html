@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html>
-<head>
-<link rel="stylesheet" href="main.css">
-</head>
-<body>
-<div><input type="button" id="load_data" value="Load Data"></input></div>
-<div>
-  <canvas id="glcanvas" width="800" height="400"></canvas>
-  <svg id="overlay" width="800" height="400">
-    <g><text x="50" y="50" text-anchor="end">Some example text</text></g>
-  </svg>
-</div>
-<script data-main="js/app/main" src="js/lib/require.js"></script>
-</body>
+  <head>
+    <link rel="stylesheet" href="main.css">
+  </head>
+  <body>
+    <div><input type="button" id="load_data" value="Load Data"></input></div>
+    <div>
+      <!-- <canvas id="glcanvas" width="1800" height="1000"></canvas> -->
+      <canvas id="select2d" width="1800" height="1000"></canvas>
+      <svg id="overlay" width="1800" height="1000">
+        <g><text x="200" y="200" text-anchor="end">Some example text</text></g>
+      </svg>
+    </div>
+    <script data-main="js/app/main" src="js/lib/require.js"></script>
+  </body>
 </html>

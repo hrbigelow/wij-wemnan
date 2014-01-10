@@ -3,7 +3,8 @@ requirejs.config({
     // urlArgs: 'bust=' + (new Date()).getTime(),
     paths: {
         app: '../app',
-        shaders: '../../shaders'
+        shaders: '../../shaders',
+        jquery: 'jquery-2.0.2'
     }
     // shim: {
     //     'makeDebugContext': {
@@ -20,8 +21,10 @@ requirejs.config({
 requirejs([
     'app/scatter_plot',
     'app/webgl_utils',
-    'app/random_points'
-], function(scatter, glUtils, randomPoints) {
+    'app/random_points',
+    'app/visual_selection',
+    'jquery'
+], function(scatter, glUtils, randomPoints, visualSelection, $) {
     // scatter_plot and all of its dependencies are now loaded here
     // and may be used.
 
@@ -29,4 +32,5 @@ requirejs([
     window.scatter = scatter;
     window.glUtils = glUtils;
     window.randomPoints = randomPoints;
+    window.selection = visualSelection;
 });

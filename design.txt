@@ -86,7 +86,13 @@ re-drawn (and or the DOM is updated to add SVG labels and such) to
 indicate the updated set of selected vertices.
 
 Once the user finishes drawing the selection area (mouse up), the
-workflow is complete.  No special considerations are needed at the end.
+workflow is complete.  The only completion code that is needed at this
+point is to push the final set of 'selected' points over to the
+JavaScript auxiliary data structure. At this point, either the
+previous set of 'selected' points is cleared and only those calculated
+as 'selected' from the hitlist buffer are marked (if this is a 'new
+selection' logic), or the union of previously selected points and
+newly selected points is used.
 
 However, one may wonder how the logic of 'new selection' vs 'add to
 selection' is handled. The behavior follows that in word-processing
@@ -106,7 +112,24 @@ with the possibility of selection and subsequent de-selection of a
 vertex due to the changing shape and size of the current
 user-selection area, some consideration is needed.
 
+But, in order to simplify the shaders that draw the plot area buffer,
+we don't really want to have two separate definitions of
+'selected'. Fortunately we don't have to. The auxiliary javascript
+data structures holding the vertex attributes (on the CPU side, that
+is) must be pushed over to the GPU using GL commands. Most of that is
+one-time and un-changing.  But, the 'selected' status of the vertices
+is changing and thus must be pushed at every re-draw. So, in this
+workflow, the 'selected' status of each vertex is defined as one of:
 
+1. The vertex is marked as 'selected' in the auxiliary structure
+2. The vertex is marked as 'selected' in the hitlist buffer computation
+
+Other details
+
+If a vertex is invisible for whatever reason, though it will still be
+plotted in the hitlist buffer, its color (or transparency) will be
+zero and thus will not pass the test for presence according to the
+shader logic.
 
 
 Texture size limit
@@ -114,7 +137,8 @@ Texture size limit
 A problem arises.  The maximum texture size for a given platform is
 most likely smaller than the view port that is visible to the user.
 And, the selection procedure is much easier to write if it can rely on
-just a single selection texture.  So, the solution should be the following:
+just a single selection texture.  So, the solution should be the
+following:
 
 1.  Maintain a viewport-sized buffer holding the current selection
 area.  (This may in fact also be visible to the user, composited with

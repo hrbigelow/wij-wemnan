@@ -7,7 +7,7 @@ varying mediump vec4 vColor;
 varying float vShape;
 
 // easy way to modify size of points all at once.
-uniform float uPointFactor;
+uniform float pointFactor;
 uniform vec3 scale;
 uniform vec3 offset;
 
@@ -17,7 +17,7 @@ uniform vec3 offset;
 void main(void) {
     gl_Position = vec4(pos * scale + offset, 1.0);
 
-    gl_PointSize = size * uPointFactor;
+    gl_PointSize = size * pointFactor;
 
     vColor = color; // modify this as well?
 

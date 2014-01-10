@@ -12,7 +12,7 @@ function loadWords() {
         dataType: 'json',
         success: function(list) {
             words = list;
-            wordsLower = words.map(function (w) { return w.toLowerCase() })
+            wordsLower = words.map(function (w) { return w.toLowerCase(); });
         }
     });
 }
@@ -43,7 +43,7 @@ function findBoundsNoncased(words, query) {
     queryLast = queryLc + String.fromCharCode(255),
     lower = lower_bound(words, 0, words.length, queryLc, wordCmp),
     upper = upper_bound(words, lower, words.length, queryLast, wordCmp);
-    return { start: lower, end: upper }
+    return { start: lower, end: upper };
 }
 
 

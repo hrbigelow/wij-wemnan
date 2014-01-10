@@ -4,10 +4,10 @@ define([
 
     window.onerror = function(msg, url, lineno) {
 	    alert(url + '(' + lineno + '): ' + msg);
-    }
+    };
 
     // create a shader of a given type from a string source
-    function createShader(str, type) {
+    function createShader(gl, str, type) {
 	    var shader = gl.createShader(type);
 	    gl.shaderSource(shader, str);
 	    gl.compileShader(shader);
@@ -22,17 +22,21 @@ define([
     // for delayed initialization of the image
     function createImage(filename, index, callback) {
         var img = new Image();
-        function onload() { callback(img, index) }
+        function onload() { callback(img, index); }
         img.onload = onload;
         img.src = filename;
         return img;
     }
 
 
-    // create a new texture from an image object (after it has been loaded)
-    function createTexture(img, index, gl) {
+    // create a new texture from an image object (after it has been
+    // loaded) returns the initialized WebGLTexture object the
+    // consumer must bind it to the unit desired.  temporarily uses
+    // TEXTURE0 as a unit in which to do the initialization work, but
+    // finally leaves the TEXTURE0 unit unbound.
+    function createTexture(img, gl) {
         var tex = gl.createTexture();
-        gl.activeTexture(gl.TEXTURE0 + index);
+        gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, tex);
         // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
@@ -42,25 +46,25 @@ define([
         gl.bindTexture(gl.TEXTURE_2D, null);
         return tex;
     }
-
-
+    
+    
     return {
         
         // creates a compiled and linked program from shader source strings,
         // within the 'gl' context given.
         createProgram: function(vss, fss, textureFiles, callback, gl) {
 	        var program = gl.createProgram(),
-	        vshader = createShader(vss, gl.VERTEX_SHADER),
-	        fshader = createShader(fss, gl.FRAGMENT_SHADER),
-            i;
-
+	         vshader = createShader(gl, vss, gl.VERTEX_SHADER),
+	         fshader = createShader(gl, fss, gl.FRAGMENT_SHADER),
+             i;
+	        
 	        gl.attachShader(program, vshader);
 	        gl.attachShader(program, fshader);
             gl.linkProgram(program);
 	        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
 		        throw gl.getProgramInfoLog(program) + ', program linking';
 	        }
-
+	        
             // this bizarre code is required to make 'every' fail
             // when merely testing the 'falsy' quality of undefined.
             program.textures = [];
@@ -73,13 +77,13 @@ define([
             });
             
             function imageLoaded(img, index) {
-                program.textures[index] = createTexture(img, index, gl);
-                if (program.textures.every(function (el, i, a) { return el })) {
+                program.textures[index] = createTexture(img, gl);
+                if (program.textures.every(function (el, i, a) { return el; })) {
                     callback(program, gl);
                 }    
             }
-
-	        return program;
+	        
+	    return program;
         },
 
 
@@ -126,9 +130,9 @@ define([
             validateUndef(functionName, args);
         },
         
-        glDebug: WebGLDebugUtils
-        
-    }
+      glDebug: WebGLDebugUtils
+      
+    };
 });
 
 

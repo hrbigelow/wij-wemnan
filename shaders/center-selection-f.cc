@@ -1,11 +1,11 @@
 varying mediump vec4 vColor;
-varying vec3 vOriginalPos;
+varying mediump vec2 vSelectionPos;
 
-uniform sampler2D sel;
+uniform sampler2D tex;
 
 
 void main(void) {
     gl_FragColor = 
-        texture2D(sel, vSelectionPos).aaaa *
+        texture2D(tex, vSelectionPos).aaaa *
         vColor;
 }
