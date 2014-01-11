@@ -13,8 +13,7 @@ define([
     // vertex attribute encoding for this scatter plot
     var shaderSpec = {
         sel: { 
-            uniforms: ['scale', 'offset', 'nVertices', 
-                       'texOrigin', 'texSize', 'viewSize', 'tex'],
+            uniforms: ['scale', 'offset', 'canvasWidth', 'tex'],
             attributes: ['pos', 'color', 'ind']
         },
         vis: {
@@ -127,10 +126,6 @@ define([
 
     }
 
-
-
-
-
     return {
         visProgram: undefined,
         selProgram: undefined,
@@ -152,7 +147,8 @@ define([
                                                     fVisShaderStr,
                                                     ['img/circle.png',
                                                      'img/triangle.png',
-                                                     'img/square.png'],
+                                                     'img/square.png',
+                                                     'img/circle.png'],
                                                     initVisProgram,
                                                     gl);
             
@@ -184,8 +180,8 @@ define([
         setZoom: function(minX, maxX, minY, maxY) {
             var Mx = 2 / (maxX - minX),
                 My = 2 / (maxY - minY),
-                Bx = Mx * minX - 1,
-                By = My * minY - 1;
+                Bx = -Mx * minX - 1,
+                By = -My * minY - 1;
 
             this.scale = [Mx, My, 1.0];
             this.offset = [Bx, By, 0.0];
@@ -208,10 +204,7 @@ define([
 
             gl.uniform2fv(pg.scale, this.scale.slice(0,2));
             gl.uniform2fv(pg.offset, this.offset.slice(0,2));
-            gl.uniform1f(pg.nVertices, this.nVertices);
-            gl.uniform2fv(pg.texOrigin, this.texOrigin);
-            gl.uniform2fv(pg.texSize, this.texSize);
-            gl.uniform2fv(pg.viewSize, [gl.drawingBufferWidth, gl.drawingBufferHeight]);
+            gl.uniform1f(pg.canvasWidth, 2048);
         },
 
         // should be called any time the data in scatterPoints changes

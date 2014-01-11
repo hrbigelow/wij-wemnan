@@ -3,7 +3,7 @@ precision mediump float;
 varying mediump vec4 vColor;
 varying float vShape;
 
-uniform sampler2D tex[3];
+uniform sampler2D tex[4];
 int ind;
 mediump float tex_alpha;
 

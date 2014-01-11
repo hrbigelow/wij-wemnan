@@ -11,15 +11,15 @@
 */
 
 
-
-
 define([
     'jquery'
 ], function($) {
 
     var polygon_points = { x:[], y:[] },
-        jcanvas = undefined,
-        context = undefined,
+        jcanvas_front = undefined,
+        jcanvas_back = undefined,
+        context_front = undefined,
+        context_back = undefined,
         fillStyle = '#8ED6FF',
         strokeStyle = 'blue',
         lineWidth = 1;
@@ -30,7 +30,7 @@ define([
     };
 
     function append(evt) {
-        var off = jcanvas.offset(),
+        var off = jcanvas_front.offset(),
             x = evt.pageX - off.left,
             y = evt.pageY - off.top;
 
@@ -38,51 +38,47 @@ define([
         polygon_points.y.push(y);
     };
 
-    
 
     function mouseDown(evt) {
         if (evt.which != 1) { return; }
-        jcanvas.mousemove(mouseMove);
+        if (! evt.ctrlKey) { clearContext(context_back); }
+        jcanvas_front.mousemove(mouseMove);
         clearPoints();
-        clearCanvas();
         append(evt);
     };
 
     function mouseMove(evt) {
         append(evt);
-        clearCanvas();
-        clearPrevDraw();
-        draw();
+        clearContext(context_front);
+        draw(context_front);
     };
 
     function mouseUp(evt) {
         if (evt.which != 1) { return; }
-        jcanvas.unbind('mousemove', mouseMove);
-        context.save();
+        jcanvas_front.unbind('mousemove', mouseMove);
+        clearContext(context_front);
+        draw(context_back);
     };
 
     // initialize variables and attach listeners
-    function init(canvas) {
-        context = canvas.getContext('2d');
-        jcanvas = $(canvas);
+    function init(canvas_front, canvas_back) {
+        context_front = canvas_front.getContext('2d');
+        context_back = canvas_back.getContext('2d');
+        jcanvas_front = $(canvas_front);
 
-        jcanvas.mousedown(mouseDown);
-        jcanvas.mouseup(mouseUp);
+        jcanvas_front.mousedown(mouseDown);
+        jcanvas_front.mouseup(mouseUp);
     };
 
-    function clearCanvas() {
-        var w = context.canvas.width,
-            h = context.canvas.height;
+    function clearContext(ctx) {
+        var w = ctx.canvas.width,
+            h = ctx.canvas.height;
 
-        context.clearRect(0, 0, w, h);
+        ctx.clearRect(0, 0, w, h);
     };
 
-    function clearPrevDraw() {
-        context.restore();
-    };
-
-    function draw() {
-        var c = context,
+    function draw(ctx) {
+        var c = ctx,
             x = polygon_points.x,
             y = polygon_points.y;
 
