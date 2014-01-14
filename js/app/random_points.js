@@ -55,7 +55,7 @@ define([
                 attr[p + schema.color.offset] = Math.random();
                 attr[p + schema.color.offset + 1] = Math.random();
                 attr[p + schema.color.offset + 2] = Math.random();
-                attr[p + schema.color.offset + 3] = Math.random();
+                attr[p + schema.color.offset + 3] = 1.0; // Math.random();
                 // attr[p+7] = 0;
                 attr[p + schema.shape.offset] = c.randomTexture(Math.random());
                 attr[p + schema.size.offset] = c.randomSize(Math.random());

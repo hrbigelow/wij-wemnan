@@ -20,9 +20,16 @@ define([
         jcanvas_back = undefined,
         context_front = undefined,
         context_back = undefined,
-        fillStyle = '#8ED6FF',
-        strokeStyle = 'blue',
-        lineWidth = 1;
+        fillStyle = '#EEEEEE',
+        strokeStyle = 'gray',
+        lineWidth = 1,
+        globalAlpha = 0.3, // want transparent selection
+        freeform_selection = false,
+        plots = [];
+
+    function attachPlot(plot) {
+        plots.push(plot);
+    };
 
     function clearPoints() {
         polygon_points.x = [];
@@ -38,19 +45,45 @@ define([
         polygon_points.y.push(y);
     };
 
+    // sets the 2nd and 3rd and 4th points of polygon_points,
+    // based on the 3rd point
+    function setRectPoints(evt) {
+        var off = jcanvas_front.offset(),
+            x = evt.pageX - off.left,
+            y = evt.pageY - off.top;
+
+        polygon_points.x[1] = polygon_points.x[0];
+        polygon_points.y[1] = y;
+        polygon_points.x[2] = x;
+        polygon_points.y[2] = y;
+        polygon_points.x[3] = x;
+        polygon_points.y[3] = polygon_points.y[0];
+    }
+
 
     function mouseDown(evt) {
         if (evt.which != 1) { return; }
         if (! evt.ctrlKey) { clearContext(context_back); }
+        freeform_selection = evt.altKey;
         jcanvas_front.mousemove(mouseMove);
         clearPoints();
         append(evt);
     };
 
     function mouseMove(evt) {
-        append(evt);
+        if (freeform_selection) { append(evt); }
+        else { setRectPoints(evt); }
         clearContext(context_front);
         draw(context_front);
+        plots.forEach(function(p) {
+            var g = p.gl;
+            g.activeTexture(g.TEXTURE0 + p.textures.user_selection_unit);
+            g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, true);
+            g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, context_front.canvas);
+            p.draw();
+        });
+        
+                           
     };
 
     function mouseUp(evt) {
@@ -60,10 +93,22 @@ define([
         draw(context_back);
     };
 
+    function setAttributes(ctx) {
+        ctx.lineWidth = lineWidth;
+        ctx.fillStyle = fillStyle;
+        ctx.strokeStyle = strokeStyle;
+        ctx.globalAlpha = globalAlpha;
+    }
+    
+
     // initialize variables and attach listeners
     function init(canvas_front, canvas_back) {
         context_front = canvas_front.getContext('2d');
         context_back = canvas_back.getContext('2d');
+
+        setAttributes(context_front);
+        setAttributes(context_back);
+
         jcanvas_front = $(canvas_front);
 
         jcanvas_front.mousedown(mouseDown);
@@ -89,16 +134,15 @@ define([
         for (var i = 1; i != x.length; i++) {
             c.lineTo(x[i], y[i]);
         }
+        c.lineTo(x[0], y[0]);
         c.closePath();
-        c.lineWidth = lineWidth;
-        c.fillStyle = fillStyle;
         c.fill();
-        c.strokeStyle = strokeStyle;
         c.stroke();
     };
 
     return {
-        init: init
+        init: init,
+        attachPlot: attachPlot
     };
     
 });

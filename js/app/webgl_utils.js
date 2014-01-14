@@ -17,75 +17,43 @@ define([
 	    return shader;
     }
 
+    // creates a compiled and linked program from shader source strings,
+    // within the 'gl' context given.
+    function createProgram(vss, fss, progSpec, gl) {
 
-    // create an image.  pass in the callback to this function
-    // for delayed initialization of the image
-    function createImage(filename, index, callback) {
-        var img = new Image();
-        function onload() { callback(img, index); }
-        img.onload = onload;
-        img.src = filename;
-        return img;
+	    var program = gl.createProgram(),
+	     vshader = createShader(gl, vss, gl.VERTEX_SHADER),
+	     fshader = createShader(gl, fss, gl.FRAGMENT_SHADER),
+         i;
+	    
+	    gl.attachShader(program, vshader);
+	    gl.attachShader(program, fshader);
+        gl.linkProgram(program);
+	    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+		    throw gl.getProgramInfoLog(program) + ', program linking';
+	    }
+
+        gl.useProgram(program);
+
+        // locate attributes
+        progSpec.attributes.forEach(
+            function (a) { program[a] = gl.getAttribLocation(program, a); }
+        );
+        
+        // locate uniforms
+        progSpec.uniforms.forEach(
+            function(u) { program[u] = gl.getUniformLocation(program, u); }
+        );
+	    
+        gl.useProgram(null);
+	    
+	    return program;
     }
 
 
-    // create a new texture from an image object (after it has been
-    // loaded) returns the initialized WebGLTexture object the
-    // consumer must bind it to the unit desired.  temporarily uses
-    // TEXTURE0 as a unit in which to do the initialization work, but
-    // finally leaves the TEXTURE0 unit unbound.
-    function createTexture(img, gl) {
-        var tex = gl.createTexture();
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        return tex;
-    }
-    
-    
     return {
         
-        // creates a compiled and linked program from shader source strings,
-        // within the 'gl' context given.
-        createProgram: function(vss, fss, textureFiles, callback, gl) {
-	        var program = gl.createProgram(),
-	         vshader = createShader(gl, vss, gl.VERTEX_SHADER),
-	         fshader = createShader(gl, fss, gl.FRAGMENT_SHADER),
-             i;
-	        
-	        gl.attachShader(program, vshader);
-	        gl.attachShader(program, fshader);
-            gl.linkProgram(program);
-	        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-		        throw gl.getProgramInfoLog(program) + ', program linking';
-	        }
-	        
-            // this bizarre code is required to make 'every' fail
-            // when merely testing the 'falsy' quality of undefined.
-            program.textures = [];
-            for (i = 0; i != textureFiles.length; i += 1) {
-                program.textures.push(undefined);
-            }
-            
-            program.images = textureFiles.map(function(filename, index) {
-                return createImage(filename, index, imageLoaded);
-            });
-            
-            function imageLoaded(img, index) {
-                program.textures[index] = createTexture(img, gl);
-                if (program.textures.every(function (el, i, a) { return el; })) {
-                    callback(program, gl);
-                }    
-            }
-	        
-	    return program;
-        },
-
+        createProgram: createProgram,
 
         // initialize the gl context
         getGLContext: function(canvas) {

@@ -5,13 +5,14 @@
   </head>
   <body>
     <div><input type="button" id="load_data" value="Load Data"></input></div>
+    <img src="img/circle.svg"></img>
     <div style="position: relative">
-      <svg id="overlay" width="1000" height="750">
+      <svg id="overlay" width="300" height="750">
         <g><text x="200" y="200" text-anchor="end">Some example text</text></g>
       </svg>
-      <canvas id="select-front" width="1000" height="750" style="position: absolute; left: 0px; top: 0px; z-index: 0"></canvas>
-      <canvas id="select-back" width="1000" height="750" style="position: absolute; left: 0px; top: 0px; z-index: -1"></canvas>
-      <canvas id="glcanvas" width="1000" height="750" style="position: absolute; left: 0px; top: 0px; z-index: -2"></canvas>
+      <canvas id="select-front" width="300" height="750" style="position: relative; left: 0px; top: 0px; z-index: 0"></canvas>
+      <canvas id="select-back" width="300" height="750" style="position: relative; left: 0px; top: 0px; z-index: -1"></canvas>
+      <canvas id="glcanvas" width="300" height="750" style="position: relative; left: 0px; top: 0px; z-index: -2"></canvas>
     </div>
     <script data-main="js/app/main" src="js/lib/require.js"></script>
   </body>

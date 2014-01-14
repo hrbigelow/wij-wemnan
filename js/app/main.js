@@ -33,4 +33,5 @@ requirejs([
     window.glUtils = glUtils;
     window.randomPoints = randomPoints;
     window.selection = visualSelection;
+    window.gl = $('#glcanvas')[0].getContext('webgl');
 });

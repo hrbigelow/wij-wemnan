@@ -2,11 +2,12 @@ define([
     'app/webgl_utils',
     'app/random_points',
     'app/data_layouts',
+    'app/textures',
     'text!shaders/points1-vertex.cc',
     'text!shaders/points1-fragment.cc',
     'text!shaders/center-selection-v.cc',
     'text!shaders/center-selection-f.cc'
-], function(glUtils, randomPoints, dataLayout,
+], function(glUtils, randomPoints, dataLayout, textures,
             vVisShaderStr, fVisShaderStr,
             vSelShaderStr, fSelShaderStr) {
 
@@ -17,7 +18,7 @@ define([
             attributes: ['pos', 'color', 'ind']
         },
         vis: {
-            uniforms: ['pointFactor', 'scale', 'offset', 'tex'],
+            uniforms: ['pointFactor', 'scale', 'offset', 'tex', 'seltex'],
             attributes: ['pos', 'color', 'shape', 'size']
         }
     };
@@ -32,150 +33,98 @@ define([
                                atts[att].offset * floatBytes);
     }
 
-    // locates attributes and uniforms.
-    // progSpec holds the names of attributes and uniforms
-    // prog holds a 'textures' field with initialized textures.
-    // assumes the presence of a sampler2D uniform called 'tex'
-    // which may be an array or not.
-    function initProg(prog, progSpec, gl)
-    {
-        // locate attributes
-        progSpec.attributes.forEach(
-            function (a) { prog[a] = gl.getAttribLocation(prog, a); }
-        );
-
-        // locate uniforms
-        progSpec.uniforms.forEach(
-            function(u) { prog[u] = gl.getUniformLocation(prog, u); }
-        );
-
-        // bind the textures to their texture units 0, 1,
-        // etc. these should correspond semantically to the 'shape'
-        // vertex attribute
-        prog.textures.forEach(function(s, i) {
-            gl.activeTexture(gl.TEXTURE0 + i);
-            gl.bindTexture(gl.TEXTURE_2D, s);
-        });
-
-        gl.useProgram(prog);
-        var ints = new Int32Array(prog.textures.length);
-        for (var i = 0; i != prog.textures.length; i += 1) { ints[i] = i; }
-        gl.uniform1iv(prog.tex, ints);
-        gl.useProgram(null);
-
-    }
-
-    // this should only be called once during the program's lifetime
-    // assumes a buffer has been initialized
-    function initVisProgram(vis, gl) {
-        initProg(vis, shaderSpec.vis, gl);
-    }
-
-    // this should only be called once during the program's lifetime
-    // assumes a buffer has been initialized
-    function initSelProgram(sel, gl) {
-        initProg(sel, shaderSpec.sel, gl);
-    }
-
-
-    function useVisProgram(vis, glBuf, gl) {
-
-        // set GL global state
-        gl.clearColor(0.0, 0.0, 0.0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-        gl.enable(gl.BLEND);
-        gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
-        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
-        gl.disable(gl.DEPTH_TEST);
-        // gl.depthFunc(gl.LEQUAL);
-
-        // define pointer semantics.  these link up the offsets in the
-        // gl program with the offsets in the buffer.
-        gl.bindBuffer(gl.ARRAY_BUFFER, glBuf);
-        
-        shaderSpec.vis.attributes.forEach(
-            function(att) { setAtt(att, vis, gl); }
-        );
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        gl.useProgram(vis);
-    }
-
-
-    // this function does just the minimal amount of work needed to get
-    // the gl context ready to use the 'sel' program.
-    // the caller is responsible for setting uniforms in the sel program itself.
-    function useSelProgram(sel, glBuf, gl) {
-
-        // set GL global state
-        gl.clearColor(0.0, 0.0, 0.0, 0.0);
-        gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-        gl.disable(gl.BLEND);
-        // !!! gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD);
-        // !!! gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
-        gl.disable(gl.DEPTH_TEST);
-        // gl.depthFunc(gl.LEQUAL);
-
-        // define pointer semantics.  these link up the offsets in the
-        // gl program with the offsets in the buffer.
-        gl.bindBuffer(gl.ARRAY_BUFFER, glBuf);
-        shaderSpec.sel.attributes.forEach(
-            function(att) { setAtt(att, sel, gl); }
-        );
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        gl.useProgram(sel);
-
-    }
-
     return {
+
         visProgram: undefined,
         selProgram: undefined,
         points: undefined,
         glPoints: undefined,
         nVertices: undefined,
+        textures: textures,
+        gl: undefined,
 
-        zoom: {
+        view: {
             scale: [1, 1, 1],
-            offset: [0, 0, 0]
+            offset: [0, 0, 0],
+            pointFactor: 1.0
         },
-        pointFactor: 1.0,
+
+
+        useVisualizationProgram: function() {
+
+            var g = this.gl;
+
+            // set GL global state
+            g.clearColor(0.0, 0.0, 0.0, 0.0);
+            g.clear(g.COLOR_BUFFER_BIT|g.DEPTH_BUFFER_BIT);
+            g.enable(g.BLEND);
+            g.blendEquationSeparate(g.FUNC_ADD, g.FUNC_ADD);
+            g.blendFuncSeparate(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA, g.ONE, g.ONE);
+            g.disable(g.DEPTH_TEST);
+            // g.depthFunc(g.LEQUAL);
+            
+            // define pointer semantics.  these link up the offsets in the
+            // g program with the offsets in the buffer.
+            g.bindBuffer(g.ARRAY_BUFFER, this.glPoints);
+            
+            var vp = this.visProgram;
+            shaderSpec.vis.attributes.forEach(function(att) { setAtt(att, vp, g); });
+
+            g.bindBuffer(g.ARRAY_BUFFER, null);
+            g.useProgram(this.visProgram);
+        },
+        
+
+        // this function does just the minimal amount of work needed to get
+        // the gl context ready to use the 'sel' program.
+        // the caller is responsible for setting uniforms in the sel program itself.
+        useSelectionProgram: function() {
+
+            var g = this.gl;
+
+            // set GL global state
+            g.clearColor(0.0, 0.0, 0.0, 0.0);
+            g.clear(g.COLOR_BUFFER_BIT|g.DEPTH_BUFFER_BIT);
+            g.disable(g.BLEND);
+            // !!! g.blendEquationSeparate(g.FUNC_ADD, g.FUNC_ADD);
+            // !!! g.blendFuncSeparate(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA, g.ONE, g.ONE);
+            g.disable(g.DEPTH_TEST);
+            // g.depthFunc(g.LEQUAL);
+
+            // define pointer semantics.  these link up the offsets in the
+            // gl program with the offsets in the buffer.
+            g.bindBuffer(g.ARRAY_BUFFER, this.glPoints);
+
+            var sp = this.selProgram;
+            shaderSpec.sel.attributes.forEach(function(att) { setAtt(att, sp, g); });
+            g.bindBuffer(g.ARRAY_BUFFER, null);
+            g.useProgram(this.selProgram);
+
+        },
 
         init: function(gl, nVertices) {
             var rp = randomPoints,
                 pc = rp.plotConfig;
 
-            this.visProgram = glUtils.createProgram(vVisShaderStr,
-                                                    fVisShaderStr,
-                                                    ['img/circle.png',
-                                                     'img/triangle.png',
-                                                     'img/square.png',
-                                                     'img/circle.png'],
-                                                    initVisProgram,
-                                                    gl);
+            this.gl = gl;
+
+            this.visProgram =
+                glUtils.createProgram(vVisShaderStr, fVisShaderStr, shaderSpec.vis, this.gl);
             
-            this.selProgram = glUtils.createProgram(vSelShaderStr,
-                                                    fSelShaderStr,
-                                                    [],
-                                                    initSelProgram,
-                                                    gl);
+            this.selProgram = 
+                glUtils.createProgram(vSelShaderStr, fSelShaderStr, shaderSpec.sel, this.gl);
+
+            this.textures.init(gl);
 
             this.nVertices = nVertices;
             this.points = rp.randomPoints(nVertices);
-            this.glPoints = gl.createBuffer();
+            this.glPoints = this.gl.createBuffer();
             this.setZoom(pc.xmin, pc.xmax, pc.ymin, pc.ymax);
 
         },
 
-        useSelectionProgram: function(gl)
-        {
-            useSelProgram(this.selProgram, this.glPoints, gl);
-        },
 
-        useVisualizationProgram: function(gl)
-        {
-            useVisProgram(this.visProgram, this.glPoints, gl);
-        },
-
-        // sets this.scale and this.offset to effect a [-1, 1] =>
+        // sets this.scale and this.view.offset to effect a [-1, 1] =>
         // [minX, maxX] transformation
         setZoom: function(minX, maxX, minY, maxY) {
             var Mx = 2 / (maxX - minX),
@@ -183,37 +132,53 @@ define([
                 Bx = -Mx * minX - 1,
                 By = -My * minY - 1;
 
-            this.scale = [Mx, My, 1.0];
-            this.offset = [Bx, By, 0.0];
+            this.view.scale = [Mx, My, 1.0];
+            this.view.offset = [Bx, By, 0.0];
         },
 
         // set the GL overall plot uniforms. This function will be
         // called any time the user-space parameters affecting the
         // visualization are altered
-        setGLPlotUniforms: function(gl) {
-            gl.useProgram(this.visProgram);
-            gl.uniform1f(this.visProgram.pointFactor, this.pointFactor);
-            gl.uniform3fv(this.visProgram.scale, this.scale);
-            gl.uniform3fv(this.visProgram.offset, this.offset);
+        setGLPlotUniforms: function() {
+            var g = this.gl;
+            g.useProgram(this.visProgram);
+            g.uniform1f(this.visProgram.pointFactor, this.view.pointFactor);
+            g.uniform3fv(this.visProgram.scale, this.view.scale);
+            g.uniform3fv(this.visProgram.offset, this.view.offset);
+            g.uniform1iv(this.visProgram.tex, textures.int32);
+            g.uniform1i(this.visProgram.seltex, textures.user_selection_unit);
         },
 
         // set GL uniforms for center-selection shaders
-        setGLSelectionUniforms: function(gl) {
-            var pg = this.selProgram;
-            gl.useProgram(pg);
+        setGLSelectionUniforms: function() {
+            var pg = this.selProgram,
+                g = this.gl;
 
-            gl.uniform2fv(pg.scale, this.scale.slice(0,2));
-            gl.uniform2fv(pg.offset, this.offset.slice(0,2));
-            gl.uniform1f(pg.canvasWidth, 2048);
+            g.useProgram(pg);
+
+            g.uniform2fv(pg.scale, this.view.scale.slice(0,2));
+            g.uniform2fv(pg.offset, this.view.offset.slice(0,2));
+            g.uniform1f(pg.canvasWidth, 2048);
         },
 
         // should be called any time the data in scatterPoints changes
         // however, for slightly more quickly changing data, perhaps a
         // separate array should be used
-        setGLPointsData: function(gl) {
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.glPoints);
-            gl.bufferData(gl.ARRAY_BUFFER, this.points, gl.STATIC_DRAW);
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        setGLPointsData: function() {
+            var g = this.gl;
+
+            g.bindBuffer(g.ARRAY_BUFFER, this.glPoints);
+            g.bufferData(g.ARRAY_BUFFER, this.points, g.STATIC_DRAW);
+            g.bindBuffer(g.ARRAY_BUFFER, null);
+        },
+
+        // top-level drawing function for this plot
+        draw: function() {
+            var p = this;
+            function draw_aux() {
+                p.gl.drawArrays(p.gl.GL_POINTS, 0, p.nVertices);
+            }
+            requestAnimationFrame(draw_aux);
         }
 
 

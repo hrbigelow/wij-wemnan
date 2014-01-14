@@ -11,7 +11,7 @@ uniform float pointFactor;
 uniform vec3 scale;
 uniform vec3 offset;
 
-uniform sampler2D tex[4];
+uniform sampler2D seltex;
 
 // need some way to modify the position.
     
@@ -22,7 +22,11 @@ void main(void) {
 
     gl_PointSize = size * pointFactor;
 
-    vColor = vec4(texture2DLod(tex[3], gl_Position.xy / 2.0 + vec2(0.5, 0.5), 0.0).rgb, color.a);
+    // vColor = vec4(texture2DLod(seltex, gl_Position.xy / 2.0 + vec2(0.5, 0.5), 0.0).rgb, color.a);
+    bool selected = texture2DLod(seltex, gl_Position.xy / 2.0 + vec2(0.5, 0.5), 0.0).a != 0.0;
+
+    vColor = selected ? vec4(1.0, 0.0, 0.0, 1.0) : color;
+        
     // vColor = color; // modify this as well?
 
     vShape = shape;
