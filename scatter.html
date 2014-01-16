@@ -4,15 +4,33 @@
     <link rel="stylesheet" href="main.css">
   </head>
   <body>
-    <div><input type="button" id="load_data" value="Load Data"></input></div>
+    <div><input type="button" id="load_data" value="Initialize" onclick="
+scatter.init(gl, 10000);
+scatter.setGLPlotUniforms();
+scatter.setGLPointsData();
+scatter.useVisualizationProgram();
+selection.attachPlot(scatter);
+selection.init($('#select-front')[0], $('#select-back')[0]);"></input>
+      <input type="button" id="grow_dots" value="Grow Dots" onclick="
+scatter.view.pointFactor *= 1.1;
+scatter.setGLPlotUniforms();
+scatter.draw();
+"></input>                                                                     
+      <input type="button" id="shrink_dots" value="Shrink Dots" onclick="
+scatter.view.pointFactor /= 1.1;
+scatter.setGLPlotUniforms();
+scatter.draw();
+"></input>     
+      <input type="button" id="draw" value="Draw" onclick="scatter.draw()"></input>
+    </div>
     <img src="img/circle.svg"></img>
     <div style="position: relative">
-      <svg id="overlay" width="300" height="750">
-        <g><text x="200" y="200" text-anchor="end">Some example text</text></g>
-      </svg>
-      <canvas id="select-front" width="300" height="750" style="position: relative; left: 0px; top: 0px; z-index: 0"></canvas>
-      <canvas id="select-back" width="300" height="750" style="position: relative; left: 0px; top: 0px; z-index: -1"></canvas>
-      <canvas id="glcanvas" width="300" height="750" style="position: relative; left: 0px; top: 0px; z-index: -2"></canvas>
+      <!-- <svg id="overlay" width="1000" height="750"> -->
+      <!--   <g><text x="200" y="200" text-anchor="end">Some example text</text></g> -->
+      <!-- </svg> -->
+      <canvas id="select-front" width="1000" height="750" style="position: absolute; left: 0px; top: 0px; z-index: 0"></canvas>
+      <canvas id="select-back" width="1000" height="750" style="position: absolute; left: 0px; top: 0px; z-index: -1"></canvas>
+      <canvas id="glcanvas" width="1000" height="750" style="position: absolute; left: 0px; top: 0px; z-index: -2"></canvas>
     </div>
     <script data-main="js/app/main" src="js/lib/require.js"></script>
   </body>

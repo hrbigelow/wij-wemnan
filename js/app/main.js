@@ -3,6 +3,7 @@ requirejs.config({
     // urlArgs: 'bust=' + (new Date()).getTime(),
     paths: {
         app: '../app',
+        img: '../../img',
         shaders: '../../shaders',
         jquery: 'jquery-2.0.2'
     }
@@ -33,5 +34,9 @@ requirejs([
     window.glUtils = glUtils;
     window.randomPoints = randomPoints;
     window.selection = visualSelection;
-    window.gl = $('#glcanvas')[0].getContext('webgl');
+    window.gl = $('#glcanvas')[0].getContext('webgl', {
+        alpha: true,
+        antialias: true,
+        premultipliedAlpha: false
+    });
 });

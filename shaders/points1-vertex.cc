@@ -1,13 +1,13 @@
 attribute vec3 pos;
 attribute vec4 color;
 attribute float shape;
-attribute float size;
+attribute highp float size;
     
-varying mediump vec4 vColor;
+varying highp vec4 vColor;
 varying float vShape;
 
 // easy way to modify size of points all at once.
-uniform float pointFactor;
+uniform highp float pointFactor;
 uniform vec3 scale;
 uniform vec3 offset;
 
@@ -27,7 +27,5 @@ void main(void) {
 
     vColor = selected ? vec4(1.0, 0.0, 0.0, 1.0) : color;
         
-    // vColor = color; // modify this as well?
-
     vShape = shape;
 }

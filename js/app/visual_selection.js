@@ -73,17 +73,28 @@ define([
     function mouseMove(evt) {
         if (freeform_selection) { append(evt); }
         else { setRectPoints(evt); }
-        clearContext(context_front);
-        draw(context_front);
-        plots.forEach(function(p) {
-            var g = p.gl;
-            g.activeTexture(g.TEXTURE0 + p.textures.user_selection_unit);
-            g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, true);
-            g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, context_front.canvas);
-            p.draw();
-        });
-        
-                           
+
+
+        function draw_aux() {
+            //jcanvas_front.unbind('mousemove', mouseMove);
+            clearContext(context_front);
+            draw(context_front);
+            plots.forEach(function(p) {
+                var g = p.gl;
+                if (g.pending_draws < 3) {
+                    g.activeTexture(g.TEXTURE0 + p.textures.user_selection_unit);
+                    g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, true);
+                    g.texImage2D(g.TEXTURE_2D, 0, g.ALPHA, g.ALPHA, g.UNSIGNED_BYTE, context_front.canvas);
+                    p.draw();
+                }
+                g.pending_draws--;
+            });
+            // jcanvas_front.mousemove(mouseMove);
+        }
+        requestAnimationFrame(draw_aux);
+
+        plots.forEach(function(p) { p.gl.pending_draws++; });
+        console.log(plots[0].gl.pending_draws);
     };
 
     function mouseUp(evt) {
@@ -123,21 +134,26 @@ define([
     };
 
     function draw(ctx) {
-        var c = ctx,
-            x = polygon_points.x,
-            y = polygon_points.y;
 
-        if (x.length < 2) { return; }
-
-        c.moveTo(x[0], y[0]);
-        c.beginPath();
-        for (var i = 1; i != x.length; i++) {
-            c.lineTo(x[i], y[i]);
+        function draw_aux() {
+            var c = ctx,
+                x = polygon_points.x,
+                y = polygon_points.y;
+            
+            if (x.length < 2) { return; }
+            
+            c.moveTo(x[0], y[0]);
+            c.beginPath();
+            for (var i = 1; i != x.length; i++) {
+                c.lineTo(x[i], y[i]);
+            }
+            c.lineTo(x[0], y[0]);
+            c.closePath();
+            c.fill();
+            c.stroke();
         }
-        c.lineTo(x[0], y[0]);
-        c.closePath();
-        c.fill();
-        c.stroke();
+        draw_aux();
+        // requestAnimationFrame(draw_aux);
     };
 
     return {
