@@ -36,7 +36,8 @@ requirejs([
     window.selection = visualSelection;
     window.gl = $('#glcanvas')[0].getContext('webgl', {
         alpha: true,
-        antialias: true,
-        premultipliedAlpha: false
+        antialias: false,
+        premultipliedAlpha: false,
+        preserveDrawingBuffer: true
     });
 });

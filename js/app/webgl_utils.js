@@ -12,17 +12,20 @@ define([
 	    gl.shaderSource(shader, str);
 	    gl.compileShader(shader);
 	    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-		    throw gl.getShaderInfoLog(shader) + ', type: ' + type;
+		    throw gl.getShaderInfoLog(shader) + ', type: ' + type
+            + ', shader source:'
+            + str;
 	    }
 	    return shader;
     }
 
     // creates a compiled and linked program from shader source strings,
     // within the 'gl' context given.
-    function createProgram(vss, fss, progSpec, gl) {
+    // uses the layout and name of the shader
+    function createProgram(vss, fss, shaderSpec, gl) {
 
 	    var program = gl.createProgram(),
-	     vshader = createShader(gl, vss, gl.VERTEX_SHADER),
+         vshader = createShader(gl, vss, gl.VERTEX_SHADER),
 	     fshader = createShader(gl, fss, gl.FRAGMENT_SHADER),
          i;
 	    
@@ -35,19 +38,23 @@ define([
 
         gl.useProgram(program);
 
-        // locate attributes
-        progSpec.attributes.forEach(
-            function (a) { program[a] = gl.getAttribLocation(program, a); }
-        );
+        // locate attributes (why is this necessary?)
+        // progSpec.attributes.forEach(
+        //     function (a) { program[a] = gl.getAttribLocation(program, a); }
+        // );
         
         // locate uniforms
-        progSpec.uniforms.forEach(
-            function(u) { program[u] = gl.getUniformLocation(program, u); }
+        shaderSpec.uniforms.forEach(
+            function(u) { 
+                var l = gl.getUniformLocation(program, u);
+                if (l == -1) { throw 'Error: uniform ' + u + ' not found.'; }
+                shaderSpec.uniforms[u] = l;
+            }
         );
 	    
         gl.useProgram(null);
 	    
-	    return program;
+	    shaderSpec.program = program;
     }
 
 

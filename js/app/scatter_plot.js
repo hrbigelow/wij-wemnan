@@ -18,19 +18,18 @@ define([
             attributes: ['pos', 'color', 'ind']
         },
         vis: {
-            uniforms: ['pointFactor', 'scale', 'offset', 'tex', 'seltex'],
-            attributes: ['pos', 'color', 'shape', 'size']
+            uniforms: ['pointFactor', 'scale', 'offset', 'tex'],
+            attributes: ['pos', 'color', 'shape', 'size', 'selected']
         }
     };
 
-    function setAtt(att, prog, gl) {
-        var atts = dataLayout.scatter,
-            floatBytes = 4;
+    function setAtt(layout, att, prog, gl) {
+        var floatBytes = 4;
 
         gl.enableVertexAttribArray(prog[att]);
-        gl.vertexAttribPointer(prog[att], atts[att].size, 
-                               gl.FLOAT, false, atts.stride * floatBytes, 
-                               atts[att].offset * floatBytes);
+        gl.vertexAttribPointer(prog[att], layout[att].size, 
+                               gl.FLOAT, false, layout.stride * floatBytes, 
+                               layout[att].offset * floatBytes);
     }
 
     return {
@@ -39,6 +38,7 @@ define([
         selProgram: undefined,
         points: undefined,
         glPoints: undefined,
+        glSelected: undefined,
         nVertices: undefined,
         textures: textures,
         
@@ -53,8 +53,10 @@ define([
         selection: {
             fb: undefined,
             rb: undefined,
-            userData: undefined,
-            width: 1000,
+            userBuf: undefined,
+            userData8: undefined,
+            userData32: undefined,
+            width: 1000, /* why 8000? this is jus a */
             height: undefined
         },
 
@@ -79,9 +81,16 @@ define([
             // define pointer semantics.  these link up the offsets in the
             // g program with the offsets in the buffer.
             g.bindBuffer(g.ARRAY_BUFFER, this.glPoints);
-            
             var vp = this.visProgram;
-            shaderSpec.vis.attributes.forEach(function(att) { setAtt(att, vp, g); });
+            shaderSpec.vis.attributes.forEach(function(att) { 
+                if (dataLayout.scatter[att]) {
+                    setAtt(dataLayout.scatter, att, vp, g); 
+                }
+            });
+
+            // special case
+            g.bindBuffer(g.ARRAY_BUFFER, this.glSelected);
+            setAtt(dataLayout.selected, 'selected', vp, g);
 
             g.bindBuffer(g.ARRAY_BUFFER, null);
             g.useProgram(this.visProgram);
@@ -98,9 +107,10 @@ define([
             // set GL global state
             g.clearColor(0.0, 0.0, 0.0, 0.0);
             g.clear(g.COLOR_BUFFER_BIT|g.DEPTH_BUFFER_BIT);
+            g.enable(g.BLEND);
             // g.disable(g.BLEND);
-            // !!! g.blendEquationSeparate(g.FUNC_ADD, g.FUNC_ADD);
-            // !!! g.blendFuncSeparate(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA, g.ONE, g.ONE);
+            g.blendEquation(g.FUNC_ADD);
+            g.blendFunc(g.ONE, g.ONE);
             g.disable(g.DEPTH_TEST);
             // g.depthFunc(g.LEQUAL);
 
@@ -109,7 +119,7 @@ define([
             g.bindBuffer(g.ARRAY_BUFFER, this.glPoints);
 
             var sp = this.selProgram;
-            shaderSpec.sel.attributes.forEach(function(att) { setAtt(att, sp, g); });
+            shaderSpec.sel.attributes.forEach(function(att) { setAtt(dataLayout.scatter, att, sp, g); });
             g.bindBuffer(g.ARRAY_BUFFER, null);
             g.useProgram(this.selProgram);
 
@@ -122,17 +132,19 @@ define([
             this.gl = gl;
             this.gl.pending_draws = 0;
 
-            this.visProgram =
-                glUtils.createProgram(vVisShaderStr, fVisShaderStr, shaderSpec.vis, this.gl);
-            
             this.selProgram = 
                 glUtils.createProgram(vSelShaderStr, fSelShaderStr, shaderSpec.sel, this.gl);
 
+            this.visProgram =
+                glUtils.createProgram(vVisShaderStr, fVisShaderStr, shaderSpec.vis, this.gl);
+            
             this.textures.init(gl);
 
             this.nVertices = nVertices;
             this.points = rp.randomPoints(nVertices);
+
             this.glPoints = this.gl.createBuffer();
+            this.glSelected = this.gl.createBuffer();
 
             this.selection.fb = this.gl.createFramebuffer();
             this.selection.rb = this.gl.createRenderbuffer();
@@ -141,20 +153,22 @@ define([
             this.gl.bindFramebuffer(gl.FRAMEBUFFER, this.selection.fb);
 
             this.selection.height = Math.ceil(this.nVertices / this.selection.width);
-            this.gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA4, 
+            this.gl.renderbufferStorage(gl.RENDERBUFFER, gl.RGBA4,
                                         this.selection.width, 
                                         this.selection.height);
 
             gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, 
                                        gl.RENDERBUFFER, this.selection.rb);
 
-            var total_size = 
+            var nPixels = 
                     gl.getRenderbufferParameter(gl.RENDERBUFFER, gl.RENDERBUFFER_HEIGHT) *
                     gl.getRenderbufferParameter(gl.RENDERBUFFER, gl.RENDERBUFFER_WIDTH);
 
             this.gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             
-            this.selection.userData = new Uint8Array(total_size * 4);
+            this.selection.userBuf = new ArrayBuffer(nPixels * 4);
+            this.selection.userData8 = new Uint8Array(this.selection.userBuf);
+            this.selection.userData32 = new Float32Array(this.selection.userBuf, 0, this.nVertices);
 
             this.setZoom(pc.xmin, pc.xmax, pc.ymin, pc.ymax);
 
@@ -208,11 +222,16 @@ define([
 
             g.bindBuffer(g.ARRAY_BUFFER, this.glPoints);
             g.bufferData(g.ARRAY_BUFFER, this.points, g.STATIC_DRAW);
+            g.bindBuffer(g.ARRAY_BUFFER, this.glSelected);
+            g.bufferData(g.ARRAY_BUFFER, this.selection.userData32, g.STATIC_DRAW);
             g.bindBuffer(g.ARRAY_BUFFER, null);
         },
 
+        // push the selection
+
         // top-level drawing function for this plot
         draw: function() {
+            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
             this.gl.drawArrays(this.gl.GL_POINTS, 0, this.nVertices);
         }
 

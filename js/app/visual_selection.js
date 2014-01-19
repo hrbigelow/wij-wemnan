@@ -94,7 +94,7 @@ define([
         requestAnimationFrame(draw_aux);
 
         plots.forEach(function(p) { p.gl.pending_draws++; });
-        console.log(plots[0].gl.pending_draws);
+        // console.log(plots[0].gl.pending_draws);
     };
 
     function mouseUp(evt) {
