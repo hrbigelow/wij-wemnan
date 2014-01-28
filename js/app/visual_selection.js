@@ -8,6 +8,8 @@
  that each new user interaction adds another selection area to the
  canvas.
 
+ The result of this is the selection area being rendered to a texture.
+
 */
 
 

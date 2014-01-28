@@ -4,11 +4,11 @@ attribute float shape;
 attribute highp float size;
 attribute float selected;
     
-varying highp vec4 vColor;
+varying mediump vec4 vColor;
 varying float vShape;
 
 // easy way to modify size of points all at once.
-uniform highp float pointFactor;
+uniform mediump float pointFactor;
 uniform vec3 scale;
 uniform vec3 offset;
 

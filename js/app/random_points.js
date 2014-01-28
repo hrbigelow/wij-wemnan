@@ -36,17 +36,16 @@ define([
         // r, g, b, a are color
         // t is the texture
         // s is the size of the point
-        randomPoints: function(nPoints) {
+        randomPoints: function(buf) {
             var schema = dataLayout.scatter,
                 stride = schema.stride,
-                n = nPoints * stride,                
-                attr = new Float32Array(n),
+                attr = new Float32Array(buf),
                 p,
                 pos,
                 c = this.plotConfig;
 
             
-            for (p = 0; p != n; p += stride) {
+            for (p = 0; p != buf.length; p += stride) {
                 pos = c.randomPos();
                 
                 attr[p + schema.pos.offset] = pos.x;

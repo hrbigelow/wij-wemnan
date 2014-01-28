@@ -8,10 +8,10 @@ define([
     // for each image, create a mipmapped texture and store it in 'point_shapes'
     // also create one
     return {
-        int32: undefined,
+        int32: null,
         point_shapes: [],
-        user_selection: undefined,
-        user_selection_unit: undefined,
+        user_selection: null,
+        user_selection_unit: null,
 
         init: function(gl) {
             var point_shapes = this.point_shapes;
@@ -29,9 +29,9 @@ define([
 
             var level_sizes = [256, 128, 64, 32, 16, 8, 4, 2, 1];
             var serial = new XMLSerializer();
-            var idat = undefined;
-            var svg_xml = undefined;
-            var shape = undefined;
+            var idat = null;
+            var svg_xml = null;
+            var shape = null;
 
             this.int32 = new Int32Array(svg_nodes.length);
             for (var i = 0; i != svg_nodes.length; i += 1) { this.int32[i] = i; }

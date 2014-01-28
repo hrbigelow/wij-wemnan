@@ -37,7 +37,7 @@ define([
             this.gl.deleteFramebuffer(this.fb);
         },
         // reads pixels from gl framebuffer into jsbuf
-        read: function() {
+        read_from_gl: function() {
             this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fb);
             this.gl.readPixels(0, 0, this.width, this.height, 
                                this.gl.RGBA, this.gl.UNSIGNED_BYTE,

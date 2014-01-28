@@ -1,27 +1,9 @@
 define([
     'app/webgl_utils',
     'app/random_points',
-    'app/data_layouts',
-    'app/textures',
-    'text!shaders/points1-vertex.cc',
-    'text!shaders/points1-fragment.cc',
-    'text!shaders/center-selection-v.cc',
-    'text!shaders/center-selection-f.cc'
-], function(glUtils, randomPoints, dataLayout, textures,
-            vVisShaderStr, fVisShaderStr,
-            vSelShaderStr, fSelShaderStr) {
-
-    // vertex attribute encoding for this scatter plot
-    var shaderSpec = {
-        sel: { 
-            uniforms: ['scale', 'offset', 'canvasDims', 'seltex'],
-            attributes: ['pos', 'color', 'ind']
-        },
-        vis: {
-            uniforms: ['pointFactor', 'scale', 'offset', 'tex'],
-            attributes: ['pos', 'color', 'shape', 'size', 'selected']
-        }
-    };
+    'app/scatter_layout',
+    'app/textures'
+], function(glUtils, randomPoints, layout, textures) {
 
     function setAtt(layout, att, prog, gl) {
         var floatBytes = 4;
@@ -56,7 +38,7 @@ define([
             userBuf: undefined,
             userData8: undefined,
             userData32: undefined,
-            width: 1000, /* why 8000? this is jus a */
+            width: 1000,
             height: undefined
         },
 
@@ -64,19 +46,13 @@ define([
 
             var g = this.gl;
 
-            // set GL global state
-            // g.clearColor(0.0, 0.0, 0.0, 0.0);
             g.clearColor(1.0, 1.0, 1.0, 1.0);
-            g.clear(g.COLOR_BUFFER_BIT|g.DEPTH_BUFFER_BIT);
+            g.clear(g.COLOR_BUFFER_BIT);
             //g.disable(g.BLEND);
             g.enable(g.BLEND);
-            // g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA);
             g.blendEquationSeparate(g.FUNC_ADD, g.FUNC_ADD);
             g.blendFuncSeparate(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA, g.ONE, g.ONE);
-            // g.blendFuncSeparate(g.SRC_ALPHA, g.DST_ALPHA, g.ONE, g.ONE);
-            
             g.disable(g.DEPTH_TEST);
-            // g.depthFunc(g.LEQUAL);
             
             // define pointer semantics.  these link up the offsets in the
             // g program with the offsets in the buffer.
@@ -194,11 +170,11 @@ define([
         setGLPlotUniforms: function() {
             var g = this.gl;
             g.useProgram(this.visProgram);
-            g.uniform1f(this.visProgram.pointFactor, this.view.pointFactor);
-            g.uniform3fv(this.visProgram.scale, this.view.scale);
-            g.uniform3fv(this.visProgram.offset, this.view.offset);
-            g.uniform1iv(this.visProgram.tex, textures.int32);
-            g.uniform1i(this.visProgram.seltex, textures.user_selection_unit);
+            //g.uniform1f(this.visProgram.pointFactor, this.view.pointFactor);
+            //g.uniform3fv(this.visProgram.scale, this.view.scale);
+            //g.uniform3fv(this.visProgram.offset, this.view.offset);
+            // g.uniform1iv(this.visProgram.tex, textures.int32);
+            //g.uniform1i(this.visProgram.seltex, textures.user_selection_unit);
         },
 
         // set GL uniforms for center-selection shaders
@@ -208,10 +184,10 @@ define([
 
             g.useProgram(pg);
 
-            g.uniform2fv(pg.scale, this.view.scale.slice(0,2));
-            g.uniform2fv(pg.offset, this.view.offset.slice(0,2));
+            // g.uniform2fv(pg.scale, this.view.scale.slice(0,2));
+            // g.uniform2fv(pg.offset, this.view.offset.slice(0,2));
             g.uniform2fv(pg.canvasDims, [this.selection.width, this.selection.height]);
-            g.uniform1i(pg.seltex, textures.user_selection_unit);
+            // g.uniform1i(pg.seltex, textures.user_selection_unit);
         },
 
         // should be called any time the data in scatterPoints changes

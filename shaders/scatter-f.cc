@@ -1,6 +1,6 @@
 precision mediump float;
 
-varying highp vec4 vColor;
+varying mediump vec4 vColor;
 varying float vShape;
 
 uniform sampler2D tex[4];
