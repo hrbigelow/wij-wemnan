@@ -87,7 +87,7 @@ define([
                     g.activeTexture(g.TEXTURE0 + p.textures.user_selection_unit);
                     g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, true);
                     g.texImage2D(g.TEXTURE_2D, 0, g.ALPHA, g.ALPHA, g.UNSIGNED_BYTE, context_front.canvas);
-                    p.draw();
+                    p.draw_picker();
                 }
                 g.pending_draws--;
             });

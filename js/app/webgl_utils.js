@@ -61,7 +61,8 @@ define([
     // create and initialize a GL Program
     // manage and mirror GL resources to ease changing shaders
     function GlProgram(gl, vsrc, fsrc, attr_names, uniform_names) {
-	    this.prog = gl.createProgram();
+        this.gl = gl;
+	    this.prog = this.gl.createProgram();
         this.vsrc = vsrc;
         this.fsrc = fsrc;
         this.vshader = null;
@@ -110,9 +111,10 @@ define([
         
         // update the uniform locations based on the names
         updateUniforms: function() {
+            var _this = this;
             this.uniforms = {};
             this.uniform_names.forEach(function(el, i) {
-                this.uniforms[el] = this.gl.getUniformLocation(this.prog, el);
+                _this.uniforms[el] = _this.gl.getUniformLocation(_this.prog, el);
             });
         }
         
@@ -128,6 +130,7 @@ define([
     GlData.prototype = {
         create_jsbuf: function(nbytes) { this.jsbuf = new ArrayBuffer(nbytes); },
         destroy_jsbuf: function() { if (this.jsbuf !== null) { this.jsbuf = null; } },
+        adopt_jsbuf: function(buf) { this.jsbuf = buf; },
         write_to_gl: function() {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.glbuf);
             this.gl.bufferData(this.gl.ARRAY_BUFFER, this.jsbuf, this.gl.STATIC_DRAW);
@@ -139,16 +142,20 @@ define([
         this.data = gldata;
         this.size = size;
         this.offset = offset;
-        this.attrib_location = this.prototype.nextLoc;
-        this.prototype.nextLoc++;
+        this.attrib_location = GlLayout.getNextLoc();
     }
 
+    GlLayout.nextLoc = 0;
+    GlLayout.getNextLoc = function() { return this.nextLoc++; };
+
     GlLayout.prototype = {
-        nextLoc: 0,
+        // sets the given attribute based on a pre-assigned
+        // global location independent of which program.
         set: function(prog, attr) {
             var gl = this.data.gl,
                 floatSize = 4;
             gl.bindAttribLocation(prog, this.attrib_location, attr);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.data.glbuf);
             gl.enableVertexAttribArray(this.attrib_location);
             gl.vertexAttribPointer(this.attrib_location,
                                    this.size,

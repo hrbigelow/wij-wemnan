@@ -4,24 +4,27 @@
     <link rel="stylesheet" href="main.css">
   </head>
   <body>
-    <div><input type="button" id="load_data" value="Initialize" onclick="
-scatter.init(gl, 100);
-scatter.setGLPlotUniforms();
-scatter.setGLPointsData();
-scatter.useVisualizationProgram();
-selection.attachPlot(scatter);
-selection.init($('#select-front')[0], $('#select-back')[0]);"></input>
-      <input type="button" id="grow_dots" value="Grow Dots" onclick="
-scatter.view.pointFactor *= 1.1;
-scatter.setGLPlotUniforms();
-scatter.draw();
-"></input>                                                                     
-      <input type="button" id="shrink_dots" value="Shrink Dots" onclick="
-scatter.view.pointFactor /= 1.1;
-scatter.setGLPlotUniforms();
-scatter.draw();
-"></input>     
-      <input type="button" id="draw" value="Draw" onclick="scatter.draw()"></input>
+    <div>
+      <input type="button" id="load_data" value="Initialize Plot and Select" 
+             onclick="scatter_plot.load_data(randomPoints.randomPoints(scatter_plot, 100));
+                      selection.attachPlot(scatter_plot);
+                      selection.init($('#select-front')[0], $('#select-back')[0]);" />
+      
+      <input type="button" id="grow_dots" value="Grow Dots" 
+             onclick="scatter_plot.view.pointFactor *= 1.1;
+                      scatter_plot.resize_dots();
+                      scatter_plot.draw();" />
+
+      <input type="button" id="shrink_dots" value="Shrink Dots" 
+             onclick="scatter_plot.view.pointFactor /= 1.1;
+                      scatter_plot.resize_dots();
+                      scatter_plot.draw();" />
+
+      <input type="button" id="sync_selection" value="Synch Selection" 
+             onclick="scatter_plot.sync_selection();
+                      " />
+
+      <input type="button" id="draw" value="Draw" onclick="scatter_plot.draw()" />
     </div>
     <img src="img/circle.svg"></img>
     <div style="position: relative">

@@ -13,11 +13,17 @@ define([
         this.fb = this.gl.createFramebuffer();
         this.rb = this.gl.createRenderbuffer();
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.fb);
+
+        // are these necessary ?
+        this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, this.rb);
+        this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.RGBA4, 10, 10);
+
         this.gl.framebufferRenderbuffer(this.gl.FRAMEBUFFER, 
                                         this.gl.COLOR_ATTACHMENT0, 
                                         this.gl.RENDERBUFFER,
                                         this.rb);
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null);
 
     }
 

@@ -1,6 +1,5 @@
 define([
-    'app/data_layouts'
-], function(dataLayout) {
+], function() {
 
     return {
         // create attributes for N points, to be pushed to webGL
@@ -36,16 +35,16 @@ define([
         // r, g, b, a are color
         // t is the texture
         // s is the size of the point
-        randomPoints: function(buf) {
-            var schema = dataLayout.scatter,
-                stride = schema.stride,
-                attr = new Float32Array(buf),
+        randomPoints: function(plot, npoints) {
+            var schema = plot.layout,
+                stride = schema.pos.data.stride,
+                attr = new Float32Array(npoints * stride),
                 p,
                 pos,
                 c = this.plotConfig;
 
             
-            for (p = 0; p != buf.length; p += stride) {
+            for (p = 0; p != attr.length; p += stride) {
                 pos = c.randomPos();
                 
                 attr[p + schema.pos.offset] = pos.x;

@@ -25,12 +25,11 @@ requirejs([
     'app/random_points',
     'app/visual_selection',
     'jquery'
-], function(scatter, glUtils, randomPoints, visualSelection, $) {
+], function(scatterPlot, glUtils, randomPoints, visualSelection, $) {
     // scatter_plot and all of its dependencies are now loaded here
     // and may be used.
 
     console.log('hello');
-    window.scatter = scatter;
     window.glUtils = glUtils;
     window.randomPoints = randomPoints;
     window.selection = visualSelection;
@@ -40,4 +39,5 @@ requirejs([
         premultipliedAlpha: false,
         preserveDrawingBuffer: true
     });
+    window.scatter_plot = new scatterPlot.ScatterPlot(window.gl);
 });
