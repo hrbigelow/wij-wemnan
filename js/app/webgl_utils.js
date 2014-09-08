@@ -135,7 +135,8 @@ define([
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.glbuf);
             this.gl.bufferData(this.gl.ARRAY_BUFFER, this.jsbuf, this.gl.STATIC_DRAW);
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
-        }
+        },
+        num_items: function() { return this.jsbuf.byteLength / 4 / this.stride; }
     };
 
     function GlLayout(gldata, size, offset) {

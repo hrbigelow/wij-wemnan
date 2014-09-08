@@ -18,11 +18,12 @@ define([
 
         this.gl = gl;
         this.program_in_use = null;
+
+        // hack.  For now, this counter is managed both in ScatterPlot
+        // and in VisualSelection
+        this.gl.pending_draws = 0;
         
-        this.data = {
-            vertex: new glutils.GlData(gl, 10),
-            selection: new glutils.GlData(gl, 1)
-        };
+        this.data = new glutils.GlData(gl, 10);
         
         // initialized after this object is created
         this.layout = null;
@@ -53,12 +54,12 @@ define([
 
             // defines vertex attribute information
         this.layout = {
-            pos:      new glutils.GlLayout(this.data.vertex, 3, 0),
-            color:    new glutils.GlLayout(this.data.vertex, 4, 3),
-            shape:    new glutils.GlLayout(this.data.vertex, 1, 7),
-            size:     new glutils.GlLayout(this.data.vertex, 1, 8),
-            ind:      new glutils.GlLayout(this.data.vertex, 1, 9),
-            selected: new glutils.GlLayout(this.data.selection, 1, 0)
+            pos:      new glutils.GlLayout(this.data, 3, 0),
+            color:    new glutils.GlLayout(this.data, 4, 3),
+            shape:    new glutils.GlLayout(this.data, 1, 7),
+            size:     new glutils.GlLayout(this.data, 1, 8),
+            ind:      new glutils.GlLayout(this.data, 1, 9),
+            selected: new glutils.GlLayout(this.picker.data, 1, 0)
         };
 
         // hack. closure to store 'this'
@@ -105,23 +106,30 @@ define([
         // marker to memoize program switches
 
         useSelection: function() {
-            if (this.program_in_use === this.useSelection) { return; }
+            if (this.program_in_use === this.select_prog) { return; }
             var g = this.gl;
             g.clearColor(0.0, 0.0, 0.0, 0.0);
-            g.blendEquation(g.FUNC_ADD);
-            g.blendFunc(g.ONE, g.ONE);
+            // g.clearColor(1.0, 0.0, 0.0, 0.0);
+            // g.blendEquation(g.FUNC_ADD);
+            // g.blendFunc(g.ONE, g.ONE);
+            g.bindFramebuffer(g.FRAMEBUFFER, this.picker.fb);
+            g.bindRenderbuffer(g.RENDERBUFFER, this.picker.rb);
+            g.blendEquationSeparate(g.FUNC_ADD, g.FUNC_ADD);
+            g.blendFuncSeparate(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA, g.ONE, g.ONE);
             g.useProgram(this.select_prog.prog);
-            this.program_in_use = this.useSelection;
+            this.program_in_use = this.select_prog;
         },
 
         useVisualization: function() {
-            if (this.program_in_use === this.useVisualization) { return; }
+            if (this.program_in_use === this.scatter_prog) { return; }
             var g = this.gl;
             g.clearColor(1.0, 1.0, 1.0, 1.0);
             g.blendEquationSeparate(g.FUNC_ADD, g.FUNC_ADD);
             g.blendFuncSeparate(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA, g.ONE, g.ONE);
+            g.bindFramebuffer(g.FRAMEBUFFER, null);
+            g.bindRenderbuffer(g.RENDERBUFFER, null);
             g.useProgram(this.scatter_prog.prog);
-            this.program_in_use = this.useVisualization;
+            this.program_in_use = this.scatter_prog;
         },
         
         // this may require only changing the viewport?
@@ -141,52 +149,68 @@ define([
             this.userState.offset[0] = Bx;
             this.userState.offset[1] = By;
 
+            this.gl.useProgram(this.scatter_prog.prog);
             this.gl.uniform3fv(this.scatter_prog.uniforms.scale, this.userState.scale);
-            this.gl.uniform3fv(this.scatter_prog.offset, this.userState.offset);
+            this.gl.uniform3fv(this.scatter_prog.uniforms.offset, this.userState.offset);
 
+            this.gl.useProgram(this.select_prog.prog);
+            this.gl.uniform3fv(this.select_prog.uniforms.scale, this.userState.scale);
+            this.gl.uniform3fv(this.select_prog.uniforms.offset, this.userState.offset);
+
+            // restore to be consistent with what JS thinks is the program in use.
+            if (this.program_in_use !== null) {
+                this.gl.useProgram(this.program_in_use.prog);
+            }
+            
         },
         
         resize_dots: function() {
             this.gl.useProgram(this.scatter_prog.prog);
             this.gl.uniform1f(this.scatter_prog.uniforms.pointFactor, 
                               this.userState.pointFactor);
+            if (this.program_in_use !== null) {
+                this.gl.useProgram(this.program_in_use.prog);
+            }
         },
         
         // transfers the contents of the picker offscreen renderbuffer into the
         // ARRAY_BUFFER
         synch_selection: function() {
             this.picker.read_from_gl();
-            this.data.selection.write_to_gl();
+            this.picker.data.write_to_gl();
         },
         
         // most importantly, when new data is loaded, the sizes change
         // assume though that the number of points is known
-        // also, resize the subordinate selection buffer
+        // also, resize the subordinate selection buffer to the next
+        // rectangular size.
         load_data: function(vertex_data) {
             var floatSize = 4,
-                npoints = vertex_data.length / this.data.vertex.stride;
-            this.data.vertex.adopt_jsbuf(vertex_data);
-            this.data.selection.create_jsbuf(npoints * floatSize);
-            this.picker.resize(npoints, this.data.selection.jsbuf);
+                npoints = vertex_data.length / this.data.stride;
+            this.data.adopt_jsbuf(vertex_data);
+            this.picker.resize(npoints);
 
             this.useSelection();
             this.gl.uniform2fv(this.select_prog.uniforms.canvasDims, 
                                [this.picker.width, this.picker.height]);
 
-            this.data.vertex.write_to_gl();
-            this.data.selection.write_to_gl();
+            this.data.write_to_gl();
+            this.picker.data.write_to_gl();
         },
         
         draw: function() {
             this.useVisualization();
             this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-            this.gl.drawArrays(this.gl.GL_POINTS, 0, this.nVertices);
+            this.gl.drawArrays(this.gl.GL_POINTS, 0, this.data.num_items());
         },
         
         draw_picker: function() {
             this.useSelection();
             this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-            this.gl.drawArrays(this.gl.GL_POINTS, 0, this.nVertices);
+
+            // draws just the number of visible vertices.
+            // the picker has a data member that has more.
+            this.gl.drawArrays(this.gl.GL_POINTS, 0, this.data.num_items());
             this.synch_selection();
         }
     };

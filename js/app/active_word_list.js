@@ -72,8 +72,8 @@ function setSearchChoices(targetNode, nodes, start, end, maxNodes){
 function makeUpdateListener(updateTarget, nodes, words, maxNodes) {
     return function(evt) {
         var searchbox = evt.target,
-        query = searchbox.value;
-        b = findBoundsNoncased(words, query);
+            query = searchbox.value,
+            b = findBoundsNoncased(words, query);
         setSearchChoices(updateTarget, nodes, b.start, b.end, maxNodes);
-    }
+    };
 }
