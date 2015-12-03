@@ -31,7 +31,7 @@ define([
         this.textures = textures;
         
         // js copies of settings for this visualization
-        this.userState  = {
+        this.userState = {
             scale: [1, 1, 1],
             offset: [0, 0, 0],
             canvasDims: [0, 0],

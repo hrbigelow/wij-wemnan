@@ -79,45 +79,93 @@ random subset of T.length / nth_sa numbers in the [0, T.length) range.
 So, lookup is JavaScript hash-based, which is probably O(1) but could be worse.
 
 */
-
-
-var fm_index = {
-    rank_all: undefined, // map of char => [int, int, ...]
-    nth_rank: 500,
-    nth_sa: 4,
-    content: undefined, // Uint8Array
-    ucontent: undefined, // Uint8Array
-    item_index: undefined, //
-    sa_offsets: undefined, // 
-    firsts: undefined, // map of char => [int, int] (small structure)
-    bwt: undefined // Uint8Array
-};
-
-var items;
-var dict = {};
-
 var item_term_char = '\1';
 var global_term_char = '\0';
 
-function load_items() {
-
-    $.ajax({
-        url: './data/rtf_diseases.json',
-        async: false,
-        cache: false,
-        dataType: 'json',
-        success: function(l) {
-            items = JSON.parse(l);
-        },
-        error: function(jq, text, err) {
-            console.log('got error ' + text);
-        }
-    });
+function FMIndex() {
+    this.rank_all = undefined; // map of char => [int, int, ...]
+    this.nth_rank = 500;
+    this.nth_sa = 4;
+    this.content = undefined; // Uint8Array
+    this.ucontent = undefined; // Uint8Array
+    this.item_index = undefined;
+    this.sa_offsets = undefined; 
+    this.firsts = undefined; // map of char => [int, int] (small structure)
+    this.bwt = undefined // Uint8Array
 };
 
-// populates dict.content with concatenated elements of items with
-// item_term_char appended to each.  dict.offsets holds the start position of
-// each item within this final string
+FMIndex.prototype = {
+    
+    init: function(items) {
+        build_offset_string(items, this);
+        var bwm = build_bwm(this.ucontent);
+        calc_firsts(bwm, this);
+        calc_bwt(bwm, this);
+        calc_rank_all(bwm, Object.keys(this.firsts), this);
+    },
+    
+    /* finds the range in index that matches the query, in the form
+     * [l, r).  call find_item_index(i) for each i in [l, r). */
+    find_range: function(query) {
+        var c = query.charCodeAt(query.length - 1),
+            nr = this.nth_rank;
+
+        if (! c in this.firsts) {
+            return [0, 0]; // empty range
+        }
+        var rng = this.firsts[c];
+        var l = rng[0], r = rng[1],
+            start,
+            i = query.length - 2;
+
+        while (i >= 0 && r > l) {
+            c = query.charCodeAt(i);
+            if (! c in this.firsts) {
+                return [0, 0];
+            }
+            start = this.firsts[c][0];
+            l = start + get_rank(this, l, c, nr);
+            r = start + get_rank(this, r, c, nr);
+
+            i--;
+        }
+        return [l, r];
+    },
+    
+    /* Usage: x = find_item_index(i).  term = items[x]. */
+    find_item_index: function(i) {
+        var n_item_term = 0, // # of times the item_terminator was crossed
+            item_term_code = item_term_char.charCodeAt(0),
+            nr = this.nth_rank,
+            c;
+        while (! (this.bwt[i] & 1<<7)) {
+            c = this.bwt[i] & 127;
+            i = this.firsts[c][0] + get_rank(this, i, c, nr);
+            n_item_term += c == item_term_code ? 1 : 0;
+        }
+
+        // this is a sparse array, lookup may not be O(1)...
+        return this.item_index[i] + n_item_term;
+    },
+    
+    /* convenience function. return a populated array of items
+       matching query */
+    query_result: function(items, query) {
+        var r = find_range(this, query),
+            result = [];
+        for (var i = r[0]; i != r[1]; i++) {
+            result.push(items[find_item_index(this, i)]);
+        }
+        return result;
+    },
+
+    
+
+};
+
+
+/* populates index.content with concatenated elements of items with
+   item_term_char appended to each. */
 function build_offset_string(items, index) {
     var p = 0;
     index.content = '';
@@ -135,8 +183,8 @@ function build_offset_string(items, index) {
 }
 
 
-// the returned sort function sorts the two BWM entries based on their
-// offsets in the 'base' string.
+/* the returned sort function sorts the two BWM entries based on their
+   offsets in the 'base' string. */
 function get_sort(base) {
 
     // this needs to enclose base
@@ -152,7 +200,7 @@ function get_sort(base) {
 
 
 
-// returns the BWM from string t.
+/* returns the BWM from string t. */
 function build_bwm(t) {
     var item_index = 0, l = t.length, bwm = new Array(l),
         item_term_code = item_term_char.charCodeAt(0);
@@ -167,8 +215,8 @@ function build_bwm(t) {
 }
 
 
-// calculate the 'firsts' map.  this is the set of ranges of each
-// character, in the form [l, r)  (half-open)
+/* calculate the 'firsts' map.  this is the set of ranges of each
+   character, in the form [l, r) (half-open) */
 function calc_firsts(bwm, index) {
     var cc = bwm[0].F, l = bwm.length;
 
@@ -185,8 +233,8 @@ function calc_firsts(bwm, index) {
 }
 
 
-// rank[c][i] is the number of times character c has been seen in the
-// range [0, i)
+/* rank[c][i] is the number of times character c has been seen in the
+   range [0, i) */
 function calc_rank_all(bwm, charCodes, index) {
     var ac = {}, code;
     index.rank_all = {};
@@ -202,8 +250,8 @@ function calc_rank_all(bwm, charCodes, index) {
     });
 }
 
-// calculates the bwt plus a flag in bit 7.  if offset % nth == 0,
-// stores this offset and sets the flag.
+/* calculates the bwt plus a flag in bit 7.  if offset % nth == 0,
+   stores this offset and sets the flag. */
 function calc_bwt(bwm, index) {
     index.bwt = new Uint8Array(bwm.length);
     index.sa_offsets = {};
@@ -233,32 +281,6 @@ function get_rank(index, i, code, nth) {
 }
 
 
-// finds the range in index that matches the query, in the form [l, r)
-function find_range(index, query) {
-    var c = query.charCodeAt(query.length - 1),
-        nr = index.nth_rank;
-
-    if (! c in index.firsts) {
-        return [0, 0]; // empty range
-    }
-    var rng = index.firsts[c];
-    var l = rng[0], r = rng[1],
-        start,
-        i = query.length - 2;
-
-    while (i >= 0 && r > l) {
-        c = query.charCodeAt(i);
-        if (! c in index.firsts) {
-            return [0, 0];
-        }
-        start = index.firsts[c][0];
-        l = start + get_rank(index, l, c, nr);
-        r = start + get_rank(index, r, c, nr);
-
-        i--;
-    }
-    return [l, r];
-}
 
 
 // find the SA Offset that corresponds with row i.  Note that the
@@ -278,39 +300,3 @@ function find_sa_offset(index, i) {
 }
 
 
-// find the item index that corresponds with row i.
-function find_item_index(index, i) {
-    var n_item_term = 0, // # of times the item_terminator was crossed
-        item_term_code = item_term_char.charCodeAt(0),
-        nr = index.nth_rank,
-        c;
-    while (! (index.bwt[i] & 1<<7)) {
-        c = index.bwt[i] & 127;
-        i = index.firsts[c][0] + get_rank(index, i, c, nr);
-        n_item_term += c == item_term_code ? 1 : 0;
-    }
-
-    // this is a sparse array, lookup may not be O(1)...
-    return index.item_index[i] + n_item_term;
-}
-
-// convenience function. return a populated array of items matching
-// query
-function query_result(index, items, query) {
-    var r = find_range(index, query), result = [];
-    for (var i = r[0]; i != r[1]; i++) {
-        result.push(items[find_item_index(index, i)]);
-    }
-    return result;
-}
-
-
-
-
-function init(items) {
-    build_offset_string(items, fm_index);
-    var bwm = build_bwm(fm_index.ucontent);
-    calc_firsts(bwm, fm_index);
-    calc_bwt(bwm, fm_index);
-    calc_rank_all(bwm, Object.keys(fm_index.firsts), fm_index);
-}
