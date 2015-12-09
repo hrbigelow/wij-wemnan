@@ -3,21 +3,14 @@
   <head>
     <!-- <script data-main="src/main" src="src/require.js"></script> -->
     <script src="js/lib/jquery-2.0.2.js"></script>
-    <script src="js/app/binary_search.js"></script>
+    <script src="js/app/fm_index.js"></script>
     <script src="js/app/active_word_list.js"></script>
   </head>
   <body>
-    <input id="isearch" type="text" placeholder="Enter a gene name..."></input>
-    <!-- <input type="button" id="init" value="Initialize"></input> -->
-    <span><i>Up to 20 genes will be listed below, depending on the search</i></span>
-    <ol id="results"></ol>
+    <div id="container" style="position: relative;">
+      <input id="isearch" type="text" placeholder="Enter a disease name..."></input>
+    </div>
     <script>
-      loadWords();
-      initWordNodes();
-      $('#isearch')[0].oninput = 
-      makeUpdateListener($('#results')[0], wordNodes, wordsLower, 20);
-      $('#isearch').triggerHandler('input');
-      $('#isearch').focus();
     </script>
   </body>
 </html>

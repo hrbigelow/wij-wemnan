@@ -1,42 +1,57 @@
 /* Instances of this class represent a Google Autocomplete-like text
  * input element. However, all options are loaded once, and indexed
- * client-side. */
-function ActiveList(url, max_elems, input_node) {
+ * client-side. Synopsis:
+
+ var al = new ActiveList(data_url, max_elems, input_node);
+ al.load_items();
+ al.build_index();
+ al.attach();
+
+ The 
+*/
+function ActiveList(url, max_elems, input_node, container_node) {
     this.cfg = {
-        url: url;
-        max_elems: max_elems;
+        url: url,
+        max_elems: max_elems
     };
     /* The DOM input node that this class will animate */
     this.input_node = input_node;
 
+    /* The DOM div that contains the input node, which will also
+     * contain cur_ul and keep it aligned. */
+    this.container_node = container_node;
+    
     /* Attach listener */
     this.input_node.oninput = function(evt) {
         this.update_cur_contents(evt.target.value);
     }
 
-    /* OL element currently in DOM */
-    this.cur_ol = build_nodes_aux(max_elems);
+    /* UL element currently in DOM */
+    this.cur_ul = build_nodes_aux(max_elems);
 
-    /* OL element in reserve */
-    this.bak_ol = build_nodes_aux(max_elems);
+    /* UL element in reserve */
+    this.bak_ul = build_nodes_aux(max_elems);
     
     this.items = undefined; /* List of phrases */
     this.items_lc = undefined; /* Lower-cased versions of items */
     this.index = undefined; /* Index for the phrases */
+
 };
+
 
 ActiveList.prototype = {
 
     /* initializes items and items_lc from url. */
     load_items: function() {
+        var al = this;
         $.ajax({
             url: this.cfg.url,
             async: false,
             cache: false,
             dataType: 'json',
             success: function(list) {
-                this.items = items;
-                this.items_lc = items.map(
+                al.items = list;
+                al.items_lc = al.items.map(
                     function(w) { return w.toLowerCase(); }
                 );
             }
@@ -49,66 +64,62 @@ ActiveList.prototype = {
         this.index.init(this.items);
     },
 
-    /* updates the contents of the cur_ol, using bak_ol as a swap
+    /* updates the contents of the cur_ul, using bak_ul as a swap
      * space. */
     update_cur_contents: function(query) {
         var i, rng = this.index.find_range(query),
-            el = this.bak_ol.firstElementChild(),
-            tmp_ol;
+            el = this.bak_ul.firstElementChild(),
+            tmp_ul;
 
         rng.r = rng.l + Math.min(rng.r - rng.l, this.cfg.max_elems);
         
-        for (var i = rng.l; i != rng.r; ++i) {
+        for (i = rng.l; i != rng.r; ++i) {
             el.innerHTML = this.items[this.index.find_item_index(i)];
             el = el.nextElementSibling();
+            el.style.display = block;
         }
-        /* Should hide any remaining items */
-        tmp_ol = this.cur_ol;
-        this.cur_ol = this.bak_ol;
-        this.bak_ol = tmp_ol;
+        /* hide remaining elements */
+        while (el != null) {
+            el.style.display = none;
+            el = el.nextElementSibling();
+        }
+
+        tmp_ul = this.cur_ul;
+        this.cur_ul = this.bak_ul;
+        this.bak_ul = tmp_ul;
+    },
+
+    /* attach the ul to the DOM */
+    attach: function() {
+        this.cur_ul.style.position = 'absolute';
+        this.cur_ul.style.top =
+            find_top_offset(this.input_node, this.container_node)
+            + this.input_node.offsetHeight;
+        this.container_node.appendChild(this.cur_ul);
     }
     
 };
 
 
+/* given a node nd and one of its ancestors an, find the offset of nd
+ * from the top of an. */
+function find_top_offset(node, ancestor) {
+    var y = 0;
+    while (node != ancestor) {
+        y += node.offsetTop;
+        node = node.offsetParent;
+    }
+    return y;
+}
+
+
+/* build an ordered list of nodes, initially hidden */
 function build_nodes_aux(n_nodes) {
-    var ol = document.createElement('ol');
-    for (i = 0; i != n_nodes; ++i) {
-        ol.appendChild(document.createElement('li'));
+    var ul = document.createElement('ul'), li;
+    for (var i = 0; i != n_nodes; ++i) {
+        li = document.createElement('li');
+        li.style.display = 'none';
+        ul.appendChild(li);
     }
-    return ol;
+    return ul;
 }
-
-
-
-function wordCmp (a, b) {
-    return a.localeCompare(b);
-}
-
-
-/* return a structure of [start, end) bounds for a given <query> on a
-   sorted list of <words> */
-function find_bounds_noncased(words, query) {
-    var queryLc = query.toLowerCase(),
-    queryLast = queryLc + String.fromCharCode(255),
-    lower = lower_bound(words, 0, words.length, queryLc, wordCmp),
-    upper = upper_bound(words, lower, words.length, queryLast, wordCmp);
-    return { start: lower, end: upper };
-}
-
-
-/* populate the DOM OL <node> with the range [<start>, <end>) of IL
-   nodes from <nodes> */
-/* OBSOLETE
-function set_search_choices(target_node, nodes, start, end, maxNodes){
-    var container = document.createDocumentFragment(),
-    i,
-    usedEnd = Math.min(end, start + maxNodes);
-    
-    for (i = start; i != usedEnd; i += 1) {
-        container.appendChild(nodes[i]);
-    }
-    target_node.innerHTML = '';
-    target_node.appendChild(container);
-}
-*/
