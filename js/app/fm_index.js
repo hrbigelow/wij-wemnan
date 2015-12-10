@@ -110,7 +110,7 @@ FMIndex.prototype = {
         var c = query.charCodeAt(query.length - 1),
             nr = this.nth_rank;
 
-        if (! c in this.firsts) {
+        if (! (c in this.firsts)) {
             return [0, 0]; // empty range
         }
         var rng = this.firsts[c];
@@ -120,7 +120,7 @@ FMIndex.prototype = {
 
         while (i >= 0 && r > l) {
             c = query.charCodeAt(i);
-            if (! c in this.firsts) {
+            if (! (c in this.firsts)) {
                 return [0, 0];
             }
             start = this.firsts[c][0];

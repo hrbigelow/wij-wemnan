@@ -10,6 +10,7 @@
  The 
 */
 function ActiveList(url, max_elems, input_node, container_node) {
+    var alist = this;
     this.cfg = {
         url: url,
         max_elems: max_elems
@@ -23,7 +24,7 @@ function ActiveList(url, max_elems, input_node, container_node) {
     
     /* Attach listener */
     this.input_node.oninput = function(evt) {
-        this.update_cur_contents(evt.target.value);
+        alist.update_cur_contents(evt.target.value);
     }
 
     /* UL element currently in DOM */
@@ -68,23 +69,27 @@ ActiveList.prototype = {
      * space. */
     update_cur_contents: function(query) {
         var i, rng = this.index.find_range(query),
-            el = this.bak_ul.firstElementChild(),
+            el = this.bak_ul.firstElementChild,
             tmp_ul;
 
-        rng.r = rng.l + Math.min(rng.r - rng.l, this.cfg.max_elems);
+        console.log('rng = ' + rng[0] + ', ' + rng[1]);
+        rng[1] = rng[0] + Math.min(rng[1] - rng[0], this.cfg.max_elems);
         
-        for (i = rng.l; i != rng.r; ++i) {
+        for (i = rng[0]; i != rng[1]; ++i) {
             el.innerHTML = this.items[this.index.find_item_index(i)];
-            el = el.nextElementSibling();
-            el.style.display = block;
+            el.style.display = 'block';
+            el = el.nextElementSibling;
         }
         /* hide remaining elements */
         while (el != null) {
-            el.style.display = none;
-            el = el.nextElementSibling();
+            el.style.display = 'none';
+            el = el.nextElementSibling;
         }
 
-        tmp_ul = this.cur_ul;
+        /* cur_ul resides in the document.  replace cur_ul node with
+         * bak_ul node in the document.  set cur_ul to */
+        tmp_ul =
+            this.container_node.replaceChild(this.bak_ul, this.cur_ul);
         this.cur_ul = this.bak_ul;
         this.bak_ul = tmp_ul;
     },
@@ -94,10 +99,10 @@ ActiveList.prototype = {
         this.cur_ul.style.position = 'absolute';
         this.cur_ul.style.top =
             find_top_offset(this.input_node, this.container_node)
-            + this.input_node.offsetHeight;
+            + this.input_node.offsetHeight
+            + 'px';
         this.container_node.appendChild(this.cur_ul);
     }
-    
 };
 
 

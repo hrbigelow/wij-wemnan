@@ -11,6 +11,10 @@
       <input id="isearch" type="text" placeholder="Enter a disease name..."></input>
     </div>
     <script>
+      var al = new ActiveList('./data/hugo_genes.json', 20, document.getElementById('isearch'), document.getElementById('container'));
+      al.load_items();
+      al.build_index();
+      al.attach();
     </script>
   </body>
 </html>
