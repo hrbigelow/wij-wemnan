@@ -1,24 +1,14 @@
-requirejs.config({
-    baseUrl: 'js/lib',
-    // urlArgs: 'bust=' + (new Date()).getTime(),
-    paths: {
-        app: '../app',
-        img: '../../img',
-        shaders: '../../shaders',
-        jquery: 'jquery-2.0.2'
-    }
-    // shim: {
-    //     'makeDebugContext': {
-    //         deps: ['webgl_debug'],
-    //         init: function(utl) {
-    //             return utl;
-    //         }
-    //     }
-    // }
+import App from './App.svelte';
 
+const app = new App({
+  target: document.body,
+  props: { }
 });
 
+export default app;
 
+
+/*
 requirejs([
     'app/scatter_plot',
     'app/webgl_utils',
@@ -41,3 +31,5 @@ requirejs([
     });
     window.scatter_plot = new scatterPlot.ScatterPlot(window.gl);
 });
+*/
+
