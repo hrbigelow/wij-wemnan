@@ -3,6 +3,8 @@ import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
+import glslify from 'rollup-plugin-glslify';
+import { string } from 'rollup-plugin-string';
 import css from 'rollup-plugin-css-only';
 import path from 'path';
 
@@ -80,6 +82,10 @@ const defaultPlugins = [
     dedupe: ['svelte']
   }),
   commonjs(),
+  glslify(),
+  string({ include: "**/*.xml" }),
+  // xml({ format: 'XMLDocument' }),
+
 
   // In dev mode, call `npm run start` once
   // the bundle has been generated
