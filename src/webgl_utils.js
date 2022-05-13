@@ -1,10 +1,5 @@
 import WebGLDebugUtils from 'webgl-debug';
 var debugGl = WebGLDebugUtils;
-// console.log(WebGLDebugUtils);
-
-window.onerror = function(msg, url, lineno) {
-  alert(url + '(' + lineno + '): ' + msg);
-};
 
 // create a shader of a given type from a string source
 function createShader(gl, str, type) {

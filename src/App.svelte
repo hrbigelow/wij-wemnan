@@ -1,8 +1,8 @@
 <script>
-  import ScatterPlot from './ScatterPlot.svelte';
+  import Plot from './Plot.svelte';
 </script>
 
-<ScatterPlot />
+<Plot />
 
 
 
