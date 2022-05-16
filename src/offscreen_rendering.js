@@ -1,4 +1,5 @@
 import * as glutils from './webgl_utils';
+import * as tf from '@tensorflow/tfjs';
 
 // a renderbuffer for representing each vertex as a single pixel
 // creates a framebuffer, renderbuffer, and attaches the latter
@@ -86,11 +87,13 @@ VertexPicker.prototype = {
         var u8 = new Uint8Array(this.data.jsbuf);
 
         this.gl.readPixels(0, 0, this.width, this.height, 
-                           this.gl.RGBA, this.gl.UNSIGNED_BYTE,
-                           u8);
-        var s = 0;
-        for (var i = 0; i != u8.byteLength; i++) { s += u8[i]; }
-        console.log('Sum: ' + s);
+            this.gl.RGBA, this.gl.UNSIGNED_BYTE, u8);
+
+        var ten = tf.tensor(u8);
+        console.log('sum(ten) = ', ten.sum().toString());
+        console.log('ten = ', ten.toString());
+        console.log(this.gl.getParameter(this.gl.VERSION));
+      
     }
 
 };

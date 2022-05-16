@@ -1,10 +1,10 @@
 <script>
   import { onMount } from 'svelte';
-  import { mouseDown, mouseUp, initVisualSelection, attachPlot } from './visual_selection'; 
+  import { mouseDown, mouseMove, mouseUp, initVisualSelection, attachPlot } from './visual_selection'; 
   import { ScatterPlot } from './scatter_plot';
-  // import VisualSelection from './VisualSelection.svelte';
   import randomPoints from './random_points';
   let mounted = false, select_front, select_back;
+  let point_factor = 1;
   var scatter;
 
   onMount(() => {
@@ -25,6 +25,7 @@
     scatter = new ScatterPlot(gl);
     mounted = true;
     update();
+    // loadScatter();
     console.log('scatter: ', scatter);
   });
 
@@ -37,18 +38,13 @@
   // $: update(update_sig, scatter);
 
   function loadScatter() {
-    scatter.load_data(randomPoints(scatter, 100));
+    scatter.load_data(randomPoints(scatter, 10000));
     update();
-  }
-
-  function growDots() {
-    scatter.userState.pointFactor *= 1.1;
-    scatter.resize_dots();
     scatter.draw();
   }
 
-  function shrinkDots() {
-    scatter.userState.pointFactor /= 1.1;
+  function dotSize() {
+    scatter.userState.pointFactor = point_factor;
     scatter.resize_dots();
     scatter.draw();
   }
@@ -61,30 +57,30 @@
     scatter.draw();
   }
 
+  function lucky() {
+    scatter.zoom();
+  }
 
 </script>
 
 
 <div>
   <input type="button" 
-         id="load_data" 
          value="Initialize Plot and Select" on:click="{loadScatter}"/>
   
   <input type="button" 
-         id="grow_dots" 
-         value="Grow Dots" on:click="{growDots}" />
-
-  <input type="button" 
-         id="shrink_dots" 
-         value="Shrink Dots" on:click="{shrinkDots}" />
-
-  <input type="button" 
-         id="sync_selection" 
          value="Synch Selection" on:click="{syncSelection}" />
 
   <input type="button" 
-         id="draw" 
          value="Draw" on:click="{draw}" />
+
+  <input type="button" 
+         value="Lucky" on:click="{lucky}" />
+
+  <input type=range
+         bind:value={point_factor}
+         on:input={dotSize}
+         min=0 max=4 step=0.01>
 </div>
 
 <div style="position: relative">
@@ -95,6 +91,7 @@
           width="1000" 
           height="600"
           on:mousedown="{mouseDown}"
+          on:mousemove="{mouseMove}"
           on:mouseup="{mouseUp}"
           style="position: absolute; left: 0px; top: 0px; z-index: 0">
   </canvas>
@@ -102,6 +99,7 @@
           width="1000" 
           height="600"
           on:mousedown="{mouseDown}"
+          on:mousemove="{mouseMove}"
           on:mouseup="{mouseUp}"
           style="position: absolute; left: 0px; top: 0px; z-index: -1">
   </canvas>

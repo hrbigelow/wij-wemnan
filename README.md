@@ -3,6 +3,10 @@ wij-wemnan
 
 experiments with webgl and widgets
 
+# Installation
+
+
+
 main.html loads a sorted list of ~40,000 names of human genes, and
 provides a simple interactive search box to search them.  The first 20
 gene names matching the search (prefix, case-insensitive) appear

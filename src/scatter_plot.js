@@ -36,12 +36,12 @@ function ScatterPlot(gl) {
 
   this.scatter_prog = new glutils.GlProgram(
     gl, scatterV, scatterF,
-    [ 'pos', 'color', 'ind' ],
+    ['pos', 'color', 'shape', 'size', 'selected'],
     [ 'scale', 'offset', 'pointFactor', 'tex' ]),
 
     this.select_prog = new glutils.GlProgram(
       gl, scatter_selectV, scatter_selectF,
-      ['pos', 'color', 'shape', 'size', 'selected'],
+      [ 'pos', 'color', 'ind' ],
       ['scale', 'offset', 'canvasDims', 'seltex']);
 
   this.picker = new offscreen.VertexPicker(gl);
@@ -88,7 +88,7 @@ function ScatterPlot(gl) {
   gl.uniform1iv(this.scatter_prog.uniforms.tex, this.textures.int32);
 
   gl.useProgram(this.select_prog.prog);
-  gl.uniform1i(this.select_prog.seltex, textures.user_selection_unit);
+  gl.uniform1i(this.select_prog.uniforms.seltex, this.textures.user_selection_unit);
 
   this.resize_dots(); // sets the pointFactor uniform
   this.zoom(); // sets scale and offset uniforms

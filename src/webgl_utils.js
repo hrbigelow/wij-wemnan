@@ -3,15 +3,15 @@ var debugGl = WebGLDebugUtils;
 
 // create a shader of a given type from a string source
 function createShader(gl, str, type) {
-  var shader = gl.createShader(type);
-  gl.shaderSource(shader, str);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    throw gl.getShaderInfoLog(shader) + ', type: ' + type
-        + ', shader source:'
-        + str;
-  }
-  return shader;
+    var shader = gl.createShader(type);
+    gl.shaderSource(shader, str);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        throw gl.getShaderInfoLog(shader) + ', type: ' + type
+            + ', shader source:'
+            + str;
+    }
+    return shader;
 }
 
 // creates a compiled and linked program from shader source strings,
@@ -19,17 +19,17 @@ function createShader(gl, str, type) {
 // uses the layout and name of the shader
 function createProgram(vss, fss, shaderSpec, gl) {
 
-  var program = gl.createProgram(),
-     vshader = createShader(gl, vss, gl.VERTEX_SHADER),
-   fshader = createShader(gl, fss, gl.FRAGMENT_SHADER),
-     i;
-  
-  gl.attachShader(program, vshader);
-  gl.attachShader(program, fshader);
+    var program = gl.createProgram(),
+        vshader = createShader(gl, vss, gl.VERTEX_SHADER),
+        fshader = createShader(gl, fss, gl.FRAGMENT_SHADER),
+        i;
+
+    gl.attachShader(program, vshader);
+    gl.attachShader(program, fshader);
     gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    throw gl.getProgramInfoLog(program) + ', program linking';
-  }
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        throw gl.getProgramInfoLog(program) + ', program linking';
+    }
 
     gl.useProgram(program);
 
@@ -38,7 +38,7 @@ function createProgram(vss, fss, shaderSpec, gl) {
     // progSpec.attributes.forEach(
     //     function (a) { program[a] = gl.getAttribLocation(program, a); }
     // );
-    
+
     // locate uniforms
     shaderSpec.uniforms.forEach(
         function(u) { 
@@ -47,17 +47,17 @@ function createProgram(vss, fss, shaderSpec, gl) {
             shaderSpec.uniforms[u] = l;
         }
     );
-  
+
     gl.useProgram(null);
-  
-  shaderSpec.program = program;
+
+    shaderSpec.program = program;
 }
 
 // create and initialize a GL Program
 // manage and mirror GL resources to ease changing shaders
 function GlProgram(gl, vsrc, fsrc, attr_names, uniform_names) {
     this.gl = gl;
-  this.prog = this.gl.createProgram();
+    this.prog = this.gl.createProgram();
     this.vsrc = vsrc;
     this.fsrc = fsrc;
     this.vshader = null;
@@ -98,12 +98,12 @@ GlProgram.prototype = {
         if (this.fshader !== null && this.vshader !== null)
         {
             this.gl.linkProgram(this.prog);
-          if (!this.gl.getProgramParameter(this.prog, this.gl.LINK_STATUS)) {
-            throw this.gl.getProgramInfoLog(this.prog) + ', program linking';
-          }
+            if (!this.gl.getProgramParameter(this.prog, this.gl.LINK_STATUS)) {
+                throw this.gl.getProgramInfoLog(this.prog) + ', program linking';
+            }
         }
     },
-    
+
     // update the uniform locations based on the names
     updateUniforms: function() {
         var _this = this;
@@ -112,7 +112,7 @@ GlProgram.prototype = {
             _this.uniforms[el] = _this.gl.getUniformLocation(_this.prog, el);
         });
     }
-    
+
 };
 
 function GlData(gl, stride) {
@@ -154,11 +154,11 @@ GlLayout.prototype = {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.data.glbuf);
         gl.enableVertexAttribArray(this.attrib_location);
         gl.vertexAttribPointer(this.attrib_location,
-                               this.size,
-                               gl.FLOAT,
-                               false,
-                               this.data.stride * floatSize,
-                               this.offset * floatSize);
+            this.size,
+            gl.FLOAT,
+            false,
+            this.data.stride * floatSize,
+            this.offset * floatSize);
     }
 };
 
@@ -167,13 +167,13 @@ GlLayout.prototype = {
 function getGLContext(canvas) {
     // Initialize the global variable gl to null.
     var gl = null;
-    
+
     try {
         gl = canvas.getContext("webgl") 
             || canvas.getContext("experimental-webgl");
     }
     catch(e) {}
-    
+
     // If we don't have a GL context, give up now
     if (!gl) {
         alert("Unable to initialize WebGL. Your browser may not support it.");
@@ -189,25 +189,24 @@ function throwOnGLError(err, funcName, args) {
 function logAndValidate(functionName, args) {
     function logGLCalls(functionName, args) {   
         console.log("gl." + functionName + "(" + 
-                    debugGl.glFunctionArgsToString(functionName, args) + ")");   
+            debugGl.glFunctionArgsToString(functionName, args) + ")");   
     }
-    
+
     function validateUndef(functionName, args) {
         for (var ii = 0; ii < args.length; ++ii) {
             if (args[ii] === undefined) {
                 console.error("undefined passed to gl." + functionName + "(" +
-                              debugGl.glFunctionArgsToString(functionName, args) + ")");
+                    debugGl.glFunctionArgsToString(functionName, args) + ")");
             }
         }
     }
-    
+
     logGLCalls(functionName, args);
     validateUndef(functionName, args);
 }
-  
 
 export { createProgram, getGLContext, throwOnGLError, logAndValidate,
-  debugGl, GlData, GlLayout, GlProgram };
+    debugGl, GlData, GlLayout, GlProgram };
 
 
 

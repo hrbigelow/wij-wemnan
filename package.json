@@ -36,6 +36,7 @@
     "svelte": "^3.0.0"
   },
   "dependencies": {
+    "@tensorflow/tfjs": "^3.17.0",
     "webgl-debug": "^2.0.1",
     "sirv-cli": "^1.0.0"
   }

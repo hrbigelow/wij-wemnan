@@ -1,7 +1,7 @@
 // create attributes for N points, to be pushed to webGL
 var plotConfig = {
     minSize: 3,
-    sizeFactor: 30,
+    sizeFactor: 5,
     nShapes: 4,
     xmin: -30,
     xmax: 500,
