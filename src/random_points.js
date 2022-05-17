@@ -53,7 +53,7 @@ export default function randomPoints(plot, npoints) {
         // attr[p+7] = 0;
         attr[p + schema.shape.offset] = c.randomTexture(Math.random());
         attr[p + schema.size.offset] = c.randomSize(Math.random());
-        attr[p + schema.ind.offset] = p / stride;
+        attr[p + schema.selected.offset] = 0.0;
 
     }
     return attr;

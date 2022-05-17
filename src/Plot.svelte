@@ -1,113 +1,124 @@
 <script>
   import { onMount } from 'svelte';
-  import { mouseDown, mouseMove, mouseUp, initVisualSelection, attachPlot } from './visual_selection'; 
-  import { ScatterPlot } from './scatter_plot';
-  import randomPoints from './random_points';
-  let mounted = false, select_front, select_back;
-  let point_factor = 1;
-  var scatter;
+  import SelectionPlot from './selection_plot';
+  let mounted = false;
+  let point_factor = 2;
+  let num_points = "1000";
+  var plot;
 
   onMount(() => {
-    var canvas = document.getElementById('glcanvas');
-    select_front = document.getElementById('select-front'); 
-    select_back = document.getElementById('select-back'); 
+    let front_canvas = document.getElementById('select-front'); 
+    let back_canvas = document.getElementById('select-back'); 
+    let gl_canvas = document.getElementById('glcanvas');
 
-    var gl_opts = {
-        alpha: true,
-        antialias: false,
-        premultipliedAlpha: false,
-        preserveDrawingBuffer: true
-    };
+    plot = new SelectionPlot(front_canvas, back_canvas, gl_canvas);
+    console.log(plot);
+    plot.refreshData(parseInt(num_points));
 
-    var gl = canvas.getContext('webgl', gl_opts) || 
-      canvas.getContext('experimental-webgl', gl_opts);
-
-    scatter = new ScatterPlot(gl);
     mounted = true;
-    update();
-    // loadScatter();
-    console.log('scatter: ', scatter);
   });
 
-  function update() {
-    if (! mounted) return;
-    initVisualSelection(select_front, select_back); 
-    attachPlot(scatter)
-  }
 
+  function refresh(num_points) {
+    plot.refreshData(parseInt(num_points));
+  }
   // $: update(update_sig, scatter);
-
-  function loadScatter() {
-    scatter.load_data(randomPoints(scatter, 10000));
-    update();
-    scatter.draw();
-  }
-
-  function dotSize() {
-    scatter.userState.pointFactor = point_factor;
-    scatter.resize_dots();
-    scatter.draw();
-  }
-
-  function syncSelection() {
-    scatter.sync_selection();
-  }
-
-  function draw() {
-    scatter.draw();
-  }
-
-  function lucky() {
-    scatter.zoom();
-  }
 
 </script>
 
 
-<div>
-  <input type="button" 
-         value="Initialize Plot and Select" on:click="{loadScatter}"/>
-  
-  <input type="button" 
-         value="Synch Selection" on:click="{syncSelection}" />
+<div class='fb-vert'>
+  <div class='fi-upper gbox-upper'>
+    <div class='framed'>
+      <canvas class='z3' id="select-front" width="1000" height="600"
+              on:mousedown="{(evt) => {plot.mouseDown(evt)}}"
+              on:mousemove="{(evt) => {plot.mouseMove(evt)}}"
+              on:mouseup="{(evt) => {plot.mouseUp(evt)}}">
+      </canvas>
+      <canvas class='z2' id="select-back" width="1000" height="600"></canvas>
+      <canvas class='z1' id="glcanvas" width="1000" height="600"></canvas>
+    </div>
+  </div>
 
-  <input type="button" 
-         value="Draw" on:click="{draw}" />
 
-  <input type="button" 
-         value="Lucky" on:click="{lucky}" />
+  <div class='fi-lower gbox-lower'>
+    <select bind:value={num_points} 
+            on:change="{refresh(num_points)}">
+      <option value="10">10</option>
+      <option value="100">100</option>
+      <option value="1000">1000</option>
+      <option value="10000">10000</option>
+      <option value="100000">100000</option>
+    </select>
 
-  <input type=range
-         bind:value={point_factor}
-         on:input={dotSize}
-         min=0 max=4 step=0.01>
+    <button on:click="{() => refresh(num_points)}">Refresh</button>
+
+    <input type=range
+           bind:value={point_factor}
+           on:input={() => plot.setPointFactor(point_factor)}
+           min=0 max=4 step=0.01>
+  </div>
+
 </div>
 
-<div style="position: relative">
-  <!-- <svg id="overlay" width="1000" height="750"> -->
-  <!--   <g><text x="200" y="200" text-anchor="end">Some example text</text></g> -->
-  <!-- </svg> -->
-  <canvas id="select-front"
-          width="1000" 
-          height="600"
-          on:mousedown="{mouseDown}"
-          on:mousemove="{mouseMove}"
-          on:mouseup="{mouseUp}"
-          style="position: absolute; left: 0px; top: 0px; z-index: 0">
-  </canvas>
-  <canvas id="select-back" 
-          width="1000" 
-          height="600"
-          on:mousedown="{mouseDown}"
-          on:mousemove="{mouseMove}"
-          on:mouseup="{mouseUp}"
-          style="position: absolute; left: 0px; top: 0px; z-index: -1">
-  </canvas>
-  <canvas id="glcanvas"
-          width="1000" 
-          height="600" 
-          style="position: absolute; left: 0px; top: 0px; z-index: -2">
-  </canvas>
-</div>
+<style>
 
+  .framed {
+    border: 1px solid gray;
+  }
+
+  .z1 {
+    z-index: 1;
+  }
+
+  .z2 {
+    z-index: 2;
+  }
+
+  .z3 {
+    z-index: 3;
+  }
+
+  .topcell {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+
+  .gbox-upper {
+    display: grid;
+    grid-template-columns: [figure-start curves-start] auto [curves-end slider-start] min-content [slider-end figure-end];
+    grid-template-rows: auto min-content;
+    row-gap: 5px;
+    column-gap: 10px;
+    justify-items: center;
+    align-items: end;
+  }
+
+  .gbox-lower {
+    display: grid;
+    /* grid-template-columns: min-content min-content 1fr 1fr 1fr min-content min-content; */
+    grid-template-columns: 5% min-content min-content 5% 10% 5% min-content min-content 5%;
+    grid-template-rows: 60% repeat(2, min-content);
+    row-gap: 5px;
+    column-gap: 5px;
+    justify-items: center;
+    align-items: center;
+    justify-content: start;
+    align-content: center;
+  }
+
+  .fi-upper {
+    flex: 4 4 0;
+  }
+
+  .fi-lower {
+    flex: 2 2 0;
+  }
+
+  .screen80 {
+    height: 80vh;
+  }
+
+</style>
 

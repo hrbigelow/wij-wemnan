@@ -11,21 +11,20 @@ varying float vShape;
 uniform vec3 scale;
 uniform vec3 offset;
 uniform mediump float pointFactor;
-uniform sampler2D seltex;
+// uniform sampler2D seltex;
 
 void main(void) {
 
     // specified in clip space coordinates.  here they are in [-1, 1]
     gl_Position = vec4(pos * scale + offset, 1.0);
-
     gl_PointSize = size * pointFactor;
 
     // translate from [-1, 1] clip space coords to [0, 1] in texture
     // coordinates
-    vec2 tex_coords = gl_Position.xy / 2.0 + vec2(0.5, 0.5);
+    // vec2 tex_coords = gl_Position.xy / 2.0 + vec2(0.5, 0.5);
 
-    bool selected = texture2DLod(seltex, tex_coords, 0.0).a != 0.0;
+    // bool selected = texture2DLod(seltex, tex_coords, 0.0).a != 0.0;
 
-    vColor = (selected) ? vec4(1.0, 0.0, 0.0, 1.0) : color;
+    vColor = (selected != 0.0) ? vec4(1.0, 0.0, 0.0, 1.0) : color;
     vShape = shape;
 }

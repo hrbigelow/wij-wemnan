@@ -1,6 +1,18 @@
 import WebGLDebugUtils from 'webgl-debug';
 var debugGl = WebGLDebugUtils;
 
+/*
+ * clip space has range [-1, -1, -1] to [1, 1, 1] and is what
+ * the gl_Position is in. 
+ *
+ * normalized device coordinates has the same range as clip space
+ * and in this case, since w = 1, the xyz components of clip space and ndc
+ * are the same.
+ *
+ *
+ *
+ */
+
 // create a shader of a given type from a string source
 function createShader(gl, str, type) {
     var shader = gl.createShader(type);
@@ -131,18 +143,21 @@ GlData.prototype = {
         this.gl.bufferData(this.gl.ARRAY_BUFFER, this.jsbuf, this.gl.STATIC_DRAW);
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
     },
-    num_items: function() { return this.jsbuf.byteLength / 4 / this.stride; }
+    num_items: function() { 
+        if (this.jsbuf == null) {
+            return 0;
+        } else {
+            return this.jsbuf.byteLength / 4 / this.stride; 
+        }
+    }
 };
 
-function GlLayout(gldata, size, offset) {
+function GlLayout(gldata, size, offset, attr_loc) {
     this.data = gldata;
     this.size = size;
     this.offset = offset;
-    this.attrib_location = GlLayout.getNextLoc();
+    this.attrib_location = attr_loc;
 }
-
-GlLayout.nextLoc = 0;
-GlLayout.getNextLoc = function() { return this.nextLoc++; };
 
 GlLayout.prototype = {
     // sets the given attribute based on a pre-assigned
@@ -159,7 +174,30 @@ GlLayout.prototype = {
             false,
             this.data.stride * floatSize,
             this.offset * floatSize);
+    },
+
+    populate: function(attr_data) {
+        let stride = this.data.stride;
+        let bi = this.offset;
+        for (let ai = 0; ai != attr_data.length; ai += this.size) {
+            this.data.jsbuf.set(attr_data.slice(ai, ai + this.size), bi);
+            bi += stride;
+        }
+    },
+
+    export: function() {
+        let attr_data = new Float32Array(this.size * this.data.num_items());
+        let stride = this.data.stride;
+        let bi = this.offset;
+        for (let ai = 0; ai != attr_data.length; ai += this.size) {
+            attr_data.set(this.data.jsbuf.slice(bi, bi + this.size), ai);
+            bi += stride;
+        }
+        return attr_data;
     }
+
+
+
 };
 
 
