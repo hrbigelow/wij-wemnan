@@ -55,7 +55,7 @@ var textures = {
         }
 
         function image_load_fcn(img, unit, size, level) {
-            console.log(`drawing image ${unit} ${size} ${level}`);
+            // console.log(`drawing image ${unit} ${size} ${level}`);
             ctx.clearRect(0, 0, cnv.width, cnv.height);
             ctx.drawImage(img, 0, 0);
             var idat = ctx.getImageData(0, 0, size, size);

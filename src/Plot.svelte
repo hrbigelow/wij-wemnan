@@ -4,14 +4,14 @@
   let mounted = false;
   let point_factor = 4;
   let num_points = "1000";
+  let num_points_selected = 0;
   var plot;
 
   onMount(async () => {
-    let front_canvas = document.getElementById('select-front'); 
-    let back_canvas = document.getElementById('select-back'); 
+    let canvas = document.getElementById('select'); 
     let gl_canvas = document.getElementById('glcanvas');
 
-    plot = new SelectionPlot(front_canvas, back_canvas, gl_canvas);
+    plot = new SelectionPlot(canvas, gl_canvas);
     await plot.scatter_plot.initTextures();
     plot.setPointFactor(point_factor);
     plot.refreshData(parseInt(num_points));
@@ -21,24 +21,34 @@
 
   });
 
+  async function handle(evt) {
+    if (evt.type == 'mousedown') {
+      plot.mouseDown(evt);
+    } else if (evt.type == 'mousemove') {
+      plot.mouseMove(evt);
+    } else if (evt.type == 'mouseup') {
+      plot.mouseUp(evt);
+    }
+    num_points_selected = await plot.getNumSelected();
+  }
 
   function refresh(num_points) {
     plot.refreshData(parseInt(num_points));
   }
+
 
 </script>
 
 <div>
   <div class='wrapper'>
     <canvas class='z3' 
-            id="select-front"
+            id="select"
             width="1000" 
             height="600"
-            on:mousedown="{(evt) => {plot.mouseDown(evt)}}"
-            on:mousemove="{(evt) => {plot.mouseMove(evt)}}"
-            on:mouseup="{(evt) => {plot.mouseUp(evt)}}">
+            on:mousedown="{handle}"
+            on:mousemove="{handle}"
+            on:mouseup="{handle}">
     </canvas>
-    <canvas class='z2' id="select-back" width="1000" height="600"></canvas>
     <canvas class='z1' id="glcanvas" width="1000" height="600"></canvas>
   </div>
 
@@ -58,6 +68,12 @@
            bind:value={point_factor}
            on:input={() => plot.setPointFactor(point_factor)}
            min=0 max=5 step=0.01>
+           <div>Total selected: {num_points_selected}</div>
+  </div>
+  <div class=''>
+    <p>Click and drag in the plot a rectangular or (with Alt held), a freeform
+    area.  Hold down Shift to add to your selection.  Note that it is
+    responsive even with 100k points.</p>
   </div>
 </div>
 

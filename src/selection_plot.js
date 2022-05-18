@@ -1,12 +1,13 @@
+// import * as tf from '@tensorflow/tfjs-core';
 import * as tf from '@tensorflow/tfjs';
+// import '@tensorflow/tfjs-backend-webgl';
 import randomPoints from './random_points';
 import ScatterPlot from './scatter_plot';
 import VisualSelect from './visual_selection';
 
 
-function SelectionPlot(front_canvas, back_canvas, gl_canvas) {
-    this.front_canvas = front_canvas;
-    this.back_canvas = back_canvas;
+function SelectionPlot(canvas, gl_canvas) {
+    this.canvas = canvas;
     this.gl_canvas = gl_canvas;
     this.width = this.gl_canvas.width;
     this.height = this.gl_canvas.height;
@@ -18,8 +19,7 @@ function SelectionPlot(front_canvas, back_canvas, gl_canvas) {
         preserveDrawingBuffer: true
     };
 
-    this.front_ctx2d = this.front_canvas.getContext('2d');
-    this.back_ctx2d = this.back_canvas.getContext('2d');
+    this.ctx2d = this.canvas.getContext('2d');
     this.ctxgl = this.gl_canvas.getContext('webgl', gl_opts) || 
         this.gl_canvas.getContext('experimental-webgl', gl_opts);
 
@@ -30,7 +30,7 @@ function SelectionPlot(front_canvas, back_canvas, gl_canvas) {
     };
 
     this.scatter_plot = new ScatterPlot(this.ctxgl, this.view_state);
-    this.visual_select = new VisualSelect(this.front_ctx2d, this.back_ctx2d);
+    this.visual_select = new VisualSelect(this.ctx2d);
     this.drag_point = null;
     this.freeform = false; 
 
@@ -53,11 +53,23 @@ SelectionPlot.prototype = {
         this.scatter_plot.draw_points();
     },
 
+    async getNumSelected() {
+        let d = this.scatter_plot.data;
+        let s = this.scatter_plot.layout.selected;
+
+        let total = tf.tidy(() => {
+            let sel = tf.tensor(d.jsbuf, [d.num_items(), d.stride]);
+            sel = sel.slice([0,s.offset], [-1,s.size]).sum();
+            return sel;
+        });
+        let val = await total.data();
+        total.dispose();
+        return val[0];
+    },
+
     mouseDown(evt) {
         this.drag_point = evt.target;
-        if (! evt.ctrlKey) {
-            this.back_ctx2d.clearRect(0, 0, this.width, this.height);
-        }
+        this.ctx2d.clearRect(0, 0, this.width, this.height);
         this.freeform = evt.altKey;
         this.visual_select.clearPoints();
         this.visual_select.appendPoint(evt);
@@ -65,8 +77,7 @@ SelectionPlot.prototype = {
 
     mouseUp(evt) {
         this.drag_point = null;
-        this.front_ctx2d.clearRect(0, 0, this.width, this.height);
-        this.visual_select.drawPolygon(this.back_ctx2d);
+        this.ctx2d.clearRect(0, 0, this.width, this.height);
     },
 
     mouseMove(evt) {
@@ -76,10 +87,10 @@ SelectionPlot.prototype = {
 
         let self = this;
         function draw_aux() {
-            self.visual_select.clearContext(self.front_ctx2d);
-            self.visual_select.drawPolygon(self.front_ctx2d);
+            self.visual_select.clearContext(self.ctx2d);
+            self.visual_select.drawPolygon(self.ctx2d);
             let [w, h] = [self.width, self.height];
-            let image = self.front_ctx2d.getImageData(0, 0, w, h);
+            let image = self.ctx2d.getImageData(0, 0, w, h);
 
             let schema = self.scatter_plot.layout;
             let gldata = schema.pos.data;
@@ -112,10 +123,14 @@ SelectionPlot.prototype = {
                 vertex_ten = vertex_ten.add(1.0).mul([w, h]).div(2.0);
                 vertex_ten = tf.cast(vertex_ten, 'int32');
 
-                // console.log('min vertex coords: ', vertex_ten.min(0).dataSync());
-                // console.log('max vertex coords: ', vertex_ten.max(0).dataSync());
                 // perform a gather
                 let mask_ten = tf.gatherND(region_ten, vertex_ten);
+
+                if (evt.shiftKey) {
+                    let current_sel = self.scatter_plot.layout.selected.export();
+                    current_sel = tf.tensor(current_sel).cast('int32');
+                    mask_ten = mask_ten.maximum(current_sel);
+                }
 
                 self.scatter_plot.layout.selected.populate(mask_ten.dataSync());
                 self.scatter_plot.data.write_to_gl();
