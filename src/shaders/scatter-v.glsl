@@ -17,6 +17,8 @@ void main(void) {
 
     // specified in clip space coordinates.  here they are in [-1, 1]
     gl_Position = vec4(pos * scale + offset, 1.0);
+    gl_Position.y = - gl_Position.y;
+
     gl_PointSize = size * pointFactor;
 
     // translate from [-1, 1] clip space coords to [0, 1] in texture

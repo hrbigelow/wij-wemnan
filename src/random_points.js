@@ -49,8 +49,7 @@ export default function randomPoints(plot, npoints) {
         attr[p + schema.color.offset] = Math.random();
         attr[p + schema.color.offset + 1] = Math.random();
         attr[p + schema.color.offset + 2] = Math.random();
-        attr[p + schema.color.offset + 3] = Math.random();
-        // attr[p+7] = 0;
+        attr[p + schema.color.offset + 3] = Math.random() / 10.0 + 0.9;
         attr[p + schema.shape.offset] = c.randomTexture(Math.random());
         attr[p + schema.size.offset] = c.randomSize(Math.random());
         attr[p + schema.selected.offset] = 0.0;

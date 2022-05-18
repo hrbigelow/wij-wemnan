@@ -90,7 +90,7 @@ SelectionPlot.prototype = {
 
             // flattened, in order H, W, C
             // retrieve just the alpha channel
-            const total_marked = tf.tidy(() => {
+            tf.tidy(() => {
                 let region_ten = tf.browser.fromPixels(image, 1);
 
                 // shape: W, H
@@ -112,8 +112,8 @@ SelectionPlot.prototype = {
                 vertex_ten = vertex_ten.add(1.0).mul([w, h]).div(2.0);
                 vertex_ten = tf.cast(vertex_ten, 'int32');
 
-                console.log('min vertex coords: ', vertex_ten.min(0).dataSync());
-                console.log('max vertex coords: ', vertex_ten.max(0).dataSync());
+                // console.log('min vertex coords: ', vertex_ten.min(0).dataSync());
+                // console.log('max vertex coords: ', vertex_ten.max(0).dataSync());
                 // perform a gather
                 let mask_ten = tf.gatherND(region_ten, vertex_ten);
 
@@ -121,16 +121,12 @@ SelectionPlot.prototype = {
                 self.scatter_plot.data.write_to_gl();
                 self.scatter_plot.draw_points();
 
-
-                return mask_ten.sum().dataSync();
-                // return region_ten.sum().dataSync();
-              
+                // return mask_ten.sum().dataSync();
               
             });
-            // console.log('total_marked = ', total_marked);
 
-            console.log('numTensors: ' + tf.memory().numTensors);
-            console.log('numDataBuffers: ' + tf.memory().numDataBuffers);
+            // console.log('numTensors: ' + tf.memory().numTensors);
+            // console.log('numDataBuffers: ' + tf.memory().numDataBuffers);
 
         }
         requestAnimationFrame(draw_aux);

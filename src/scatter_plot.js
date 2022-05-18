@@ -1,10 +1,7 @@
 import * as glutils from './webgl_utils';
 import scatterV from './shaders/scatter-v.glsl';
 import scatterF from './shaders/scatter-f.glsl';
-// import scatter_selectV from './shaders/scatter_select-v.glsl';
-// import scatter_selectF from './shaders/scatter_select-f.glsl';
 import textures from './textures';
-// import * as offscreen from './offscreen_rendering';
 
 function ScatterPlot(gl, viewState) {
 
@@ -22,6 +19,7 @@ function ScatterPlot(gl, viewState) {
     this.layout = null;
 
     this.textures = textures;
+    this.textures_loaded = false;
 
     this.viewState = viewState;
     this.scatter_prog = new glutils.GlProgram(
@@ -29,6 +27,11 @@ function ScatterPlot(gl, viewState) {
         ['pos', 'color', 'shape', 'size', 'selected'],
         [ 'scale', 'offset', 'pointFactor', 'tex']
     );
+
+    // gl state that remains constant for the life of the plot
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.disable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);
 
     // defines vertex attribute information
     this.layout = {
@@ -48,21 +51,12 @@ function ScatterPlot(gl, viewState) {
 
     this.scatter_prog.attr_names.forEach(set_scatter);
 
+
     this.scatter_prog.updateShader(gl.VERTEX_SHADER);
     this.scatter_prog.updateShader(gl.FRAGMENT_SHADER);
     this.scatter_prog.updateUniforms();
 
-    // asynchronous.  requires loading 7 sizes of images for each glyph
-    this.textures.init(gl);
-
-    // gl state that remains constant for the life of the plot
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.disable(gl.DEPTH_TEST);
-    gl.enable(gl.BLEND);
-
-    // set specific uniform values that remain constant for life of the plot
     gl.useProgram(this.scatter_prog.prog);
-    // gl.uniform1iv(this.scatter_prog.uniforms.tex, this.textures.int32);
 
     this.resize_dots(); // sets the pointFactor uniform
     this.zoom(); // sets scale and offset uniforms
@@ -81,6 +75,12 @@ ScatterPlot.prototype = {
         g.bindRenderbuffer(g.RENDERBUFFER, null);
         // g.useProgram(this.scatter_prog.prog);
         // this.program_in_use = this.scatter_prog;
+    },
+
+    async initTextures() {
+        await this.textures.init(this.gl);
+        this.gl.uniform1iv(this.scatter_prog.uniforms.tex, this.textures.int32);
+        this.textures_loaded = true;
     },
 
     // this may require only changing the viewport?
@@ -107,17 +107,9 @@ ScatterPlot.prototype = {
     },
 
     resize_dots() {
-        // this.gl.useProgram(this.scatter_prog.prog);
         this.gl.uniform1f(this.scatter_prog.uniforms.pointFactor, 
             this.viewState.pointFactor);
     },
-
-    // transfers the contents of the picker offscreen renderbuffer into the
-    // ARRAY_BUFFER
-    // sync_selection: function() {
-    // this.picker.read_from_gl();
-    // this.picker.data.write_to_gl();
-    // },
 
     // most importantly, when new data is loaded, the sizes change
     // assume though that the number of points is known
@@ -127,27 +119,17 @@ ScatterPlot.prototype = {
         var floatSize = 4,
             npoints = vertex_data.length / this.data.stride;
         this.data.adopt_jsbuf(vertex_data);
-
         this.data.write_to_gl();
+        // console.log(this.layout.shape.export());
     },
 
     draw_points() {
+        // if (! this.textures_loaded) { return; }
         this.useVisualization();
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.drawArrays(this.gl.GL_POINTS, 0, this.data.num_items());
     }
 
-    /*
-  draw_picker: function() {
-    this.useSelection();
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-
-      // draws just the number of visible vertices.
-      // the picker has a data member that has more.
-    this.gl.drawArrays(this.gl.GL_POINTS, 0, this.data.num_items());
-    this.sync_selection();
-  }
-  */
 };
 
 export default ScatterPlot;
