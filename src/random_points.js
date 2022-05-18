@@ -32,7 +32,7 @@ var plotConfig = {
 // t is the texture
 // s is the size of the point
 export default function randomPoints(plot, npoints) {
-    var schema = plot.layout,
+    var schema = plot.schema,
         stride = schema.pos.data.stride,
         attr = new Float32Array(npoints * stride),
         p,

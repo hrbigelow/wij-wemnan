@@ -1,7 +1,8 @@
 wij-wemnan
 ==========
 
-experiments with webgl and widgets
+Using Tensorflow.js and WebGL rendering for interactive visualization of large
+datasets.
 
 # Installation
 

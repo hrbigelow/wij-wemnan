@@ -16,7 +16,7 @@ function ScatterPlot(gl, viewState) {
     this.data = new glutils.GlData(gl, 10);
 
     // initialized after this object is created
-    this.layout = null;
+    this.schema = null;
 
     this.textures = textures;
     this.textures_loaded = false;
@@ -34,7 +34,7 @@ function ScatterPlot(gl, viewState) {
     gl.enable(gl.BLEND);
 
     // defines vertex attribute information
-    this.layout = {
+    this.schema = {
         pos:      new glutils.GlLayout(this.data, 3, 0, 0),
         color:    new glutils.GlLayout(this.data, 4, 3, 1),
         shape:    new glutils.GlLayout(this.data, 1, 7, 2),
@@ -47,7 +47,7 @@ function ScatterPlot(gl, viewState) {
         return function(att) { l[att].set(p, att); };
     }
 
-    let set_scatter = aux(this.layout, this.scatter_prog.prog);
+    let set_scatter = aux(this.schema, this.scatter_prog.prog);
 
     this.scatter_prog.attr_names.forEach(set_scatter);
 
@@ -120,7 +120,7 @@ ScatterPlot.prototype = {
             npoints = vertex_data.length / this.data.stride;
         this.data.adopt_jsbuf(vertex_data);
         this.data.write_to_gl();
-        // console.log(this.layout.shape.export());
+        // console.log(this.schema.shape.export());
     },
 
     draw_points() {

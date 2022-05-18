@@ -54,14 +54,12 @@ SelectionPlot.prototype = {
     },
 
     async getNumSelected() {
-        let d = this.scatter_plot.data;
-        let s = this.scatter_plot.layout.selected;
+        let s = this.scatter_plot.schema.selected;
 
         let total = tf.tidy(() => {
-            let sel = tf.tensor(d.jsbuf, [d.num_items(), d.stride]);
-            sel = sel.slice([0,s.offset], [-1,s.size]).sum();
-            return sel;
+            return s.export().sum()
         });
+
         let val = await total.data();
         total.dispose();
         return val[0];
@@ -90,18 +88,19 @@ SelectionPlot.prototype = {
             self.visual_select.clearContext(self.ctx2d);
             self.visual_select.drawPolygon(self.ctx2d);
             let [w, h] = [self.width, self.height];
+
+            // GPU -> CPU
             let image = self.ctx2d.getImageData(0, 0, w, h);
 
-            let schema = self.scatter_plot.layout;
+            let schema = self.scatter_plot.schema;
             let gldata = schema.pos.data;
             let N = gldata.num_items();
-
-            // flattened shape xyzxyz...
-            let vertex_pos = schema.pos.export();
 
             // flattened, in order H, W, C
             // retrieve just the alpha channel
             tf.tidy(() => {
+
+                // CPU -> GPU
                 let region_ten = tf.browser.fromPixels(image, 1);
 
                 // shape: W, H
@@ -110,7 +109,7 @@ SelectionPlot.prototype = {
 
                 // create a tensor of vertex pixel coordinates
                 // shape: N, 2 (but inner dimension is x, y
-                let vertex_ten = tf.tensor(vertex_pos, [N, 3]);
+                let vertex_ten = schema.pos.export();
                 vertex_ten = vertex_ten.slice([0,0],[-1,2]);
 
                 let scale2 = self.view_state.scale.slice(0, 2);
@@ -127,12 +126,12 @@ SelectionPlot.prototype = {
                 let mask_ten = tf.gatherND(region_ten, vertex_ten);
 
                 if (evt.shiftKey) {
-                    let current_sel = self.scatter_plot.layout.selected.export();
-                    current_sel = tf.tensor(current_sel).cast('int32');
+                    let current_sel = self.scatter_plot.schema.selected.export();
+                    current_sel = current_sel.squeeze(1).cast('int32');
                     mask_ten = mask_ten.maximum(current_sel);
                 }
 
-                self.scatter_plot.layout.selected.populate(mask_ten.dataSync());
+                self.scatter_plot.schema.selected.populate(mask_ten.dataSync());
                 self.scatter_plot.data.write_to_gl();
                 self.scatter_plot.draw_points();
 
@@ -140,7 +139,7 @@ SelectionPlot.prototype = {
               
             });
 
-            // console.log('numTensors: ' + tf.memory().numTensors);
+            console.log('numTensors: ' + tf.memory().numTensors);
             // console.log('numDataBuffers: ' + tf.memory().numDataBuffers);
 
         }

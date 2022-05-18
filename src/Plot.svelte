@@ -3,7 +3,8 @@
   import SelectionPlot from './selection_plot';
   let mounted = false;
   let point_factor = 4;
-  let num_points = "1000";
+  let log10_num_points = "2";
+  let num_points = 100;
   let num_points_selected = 0;
   var plot;
 
@@ -14,7 +15,7 @@
     plot = new SelectionPlot(canvas, gl_canvas);
     await plot.scatter_plot.initTextures();
     plot.setPointFactor(point_factor);
-    plot.refreshData(parseInt(num_points));
+    refresh(log10_num_points);
     console.log(plot.scatter_plot.scatter_prog.uniforms);
 
     mounted = true;
@@ -32,8 +33,9 @@
     num_points_selected = await plot.getNumSelected();
   }
 
-  function refresh(num_points) {
-    plot.refreshData(parseInt(num_points));
+  function refresh(log10_num_points) {
+    num_points = parseInt(Math.pow(10, parseFloat(log10_num_points)));
+    plot.refreshData(num_points);
   }
 
 
@@ -41,7 +43,7 @@
 
 <div>
   <div class='wrapper'>
-    <canvas class='z3' 
+    <canvas class='z2' 
             id="select"
             width="1000" 
             height="600"
@@ -53,16 +55,13 @@
   </div>
 
   <div class=''>
-    <select bind:value={num_points} 
-            on:change="{refresh(num_points)}">
-      <option value="10">10</option>
-      <option value="100">100</option>
-      <option value="1000">1000</option>
-      <option value="10000">10000</option>
-      <option value="100000">100000</option>
-    </select>
+    <div>Number of Data Points: {num_points}</div>
+    <input type=range
+           bind:value={log10_num_points}
+           on:input="{refresh(log10_num_points)}"
+           min=0, max=5 step=0.01>
 
-    <button on:click="{() => refresh(num_points)}">Refresh</button>
+    <button on:click="{() => refresh(log10_num_points)}">Refresh</button>
 
     <input type=range
            bind:value={point_factor}
@@ -70,10 +69,14 @@
            min=0 max=5 step=0.01>
            <div>Total selected: {num_points_selected}</div>
   </div>
+
   <div class=''>
     <p>Click and drag in the plot a rectangular or (with Alt held), a freeform
     area.  Hold down Shift to add to your selection.  Note that it is
-    responsive even with 100k points.</p>
+    responsive even with 100k points.  See 
+    <a href="https://github.com/hrbigelow/wij-wemnan">source code</a>
+    for more.
+    </p>
   </div>
 </div>
 
@@ -86,10 +89,6 @@
 
   .z2 {
     z-index: 2;
-  }
-
-  .z3 {
-    z-index: 3;
   }
 
   .wrapper {

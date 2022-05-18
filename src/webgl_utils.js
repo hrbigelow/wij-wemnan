@@ -1,3 +1,4 @@
+import * as tf from '@tensorflow/tfjs';
 import WebGLDebugUtils from 'webgl-debug';
 var debugGl = WebGLDebugUtils;
 
@@ -186,14 +187,13 @@ GlLayout.prototype = {
     },
 
     export: function() {
-        let attr_data = new Float32Array(this.size * this.data.num_items());
-        let stride = this.data.stride;
-        let bi = this.offset;
-        for (let ai = 0; ai != attr_data.length; ai += this.size) {
-            attr_data.set(this.data.jsbuf.slice(bi, bi + this.size), ai);
-            bi += stride;
-        }
-        return attr_data;
+        const d = this.data
+        const slice = tf.tidy(() => {
+            let ten = tf.tensor(d.jsbuf, [d.num_items(), d.stride]);
+            ten = ten.slice([0,this.offset], [-1, this.size]);
+            return ten;
+        });
+        return slice;
     }
 
 
@@ -245,30 +245,3 @@ function logAndValidate(functionName, args) {
 
 export { createProgram, getGLContext, throwOnGLError, logAndValidate,
     debugGl, GlData, GlLayout, GlProgram };
-
-
-
-// (function() {
-//     var lastTime = 0;
-//     var vendors = ['ms', 'moz', 'webkit', 'o'];
-//     for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
-//         window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
-//         window.cancelRequestAnimationFrame = window[vendors[x]+
-//                                                     'CancelRequestAnimationFrame'];
-//     }
-
-//     if (!window.requestAnimationFrame)
-//         window.requestAnimationFrame = function(callback, element) {
-//             var currTime = new Date().getTime();
-//             var timeToCall = Math.max(0, 16 - (currTime - lastTime));
-//             var id = window.setTimeout(function() { callback(currTime + timeToCall); },
-//                                        timeToCall);
-//             lastTime = currTime + timeToCall;
-//             return id;
-//         };
-
-//     if (!window.cancelAnimationFrame)
-//         window.cancelAnimationFrame = function(id) {
-//             clearTimeout(id);
-//         };
-// }())
