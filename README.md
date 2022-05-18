@@ -2,7 +2,7 @@ wij-wemnan
 ==========
 
 Using Tensorflow.js and WebGL rendering for interactive visualization of large
-datasets.
+datasets.  ([Demo](https://www.mlcrumbs.com/wij-wemnan/))
 
 # Installation
 
