@@ -8,7 +8,6 @@ int ind;
 mediump float tex_alpha;
 
 void main(void) {
-    // mediump float tex_alpha;
     ind = int(vShape);
     if      (ind == 0) { tex_alpha = texture2D(tex[0], gl_PointCoord).a; }
     else if (ind == 1) { tex_alpha = texture2D(tex[1], gl_PointCoord).a; }
@@ -19,11 +18,7 @@ void main(void) {
     // gl_FragColor = vec4(vColor.r, vColor.g, vColor.b, vColor.a * tex_alpha);
 
     // this still results in flickering.
-    // gl_FragColor = vec4(vColor.r, vColor.g, vColor.b, 0.5);
-    // vec4 col = vec4(vColor.r, vColor.g, vColor.b, vColor.a * tex_alpha);
     vec4 col = vec4(vColor.rgb, min(vColor.a, tex_alpha));
     gl_FragColor = col;
-    
-    // gl_FragColor = vec3(1.0, 1.0, 1.0);
     
 }

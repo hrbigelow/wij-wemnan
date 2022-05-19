@@ -7,10 +7,8 @@ import VisualSelect from './visual_selection';
 
 
 function SelectionPlot(canvas, gl_canvas) {
-    this.canvas = canvas;
-    this.gl_canvas = gl_canvas;
-    this.width = this.gl_canvas.width;
-    this.height = this.gl_canvas.height;
+    
+    this.visual_select = new VisualSelect(canvas.getContext('2d'));
 
     var gl_opts = {
         alpha: true,
@@ -19,8 +17,7 @@ function SelectionPlot(canvas, gl_canvas) {
         preserveDrawingBuffer: true
     };
 
-    this.ctx2d = this.canvas.getContext('2d');
-    this.ctxgl = this.gl_canvas.getContext('webgl', gl_opts) || 
+    let ctxgl = gl_canvas.getContext('webgl', gl_opts) || 
         this.gl_canvas.getContext('experimental-webgl', gl_opts);
 
     this.view_state = {
@@ -29,8 +26,7 @@ function SelectionPlot(canvas, gl_canvas) {
         pointFactor: 1
     };
 
-    this.scatter_plot = new ScatterPlot(this.ctxgl, this.view_state);
-    this.visual_select = new VisualSelect(this.ctx2d);
+    this.scatter_plot = new ScatterPlot(ctxgl, this.view_state);
     this.drag_point = null;
     this.freeform = false; 
 
@@ -40,11 +36,26 @@ SelectionPlot.prototype = {
 
     constructor: SelectionPlot,
 
-    refreshData: function(num_points) {
+    refreshData(num_points) {
         console.log('in refreshData with ', num_points);
         this.scatter_plot.load_data(randomPoints(this.scatter_plot, num_points));
-        this.scatter_plot.zoom();
         this.scatter_plot.draw_points();
+    },
+
+    resizeCanvas() {
+        this.scatter_plot.resize_canvas();
+        this.visual_select.resize_canvas();
+        this.scatter_plot.draw_points();
+    },
+
+
+    resetZoom() {
+        this.scatter_plot.resetZoom();
+    },
+
+
+    zoom() {
+        this.scatter_plot.zoom();
     },
 
     setPointFactor(point_factor) {
@@ -65,17 +76,26 @@ SelectionPlot.prototype = {
         return val[0];
     },
 
+    clearSelection() {
+        let sc = this.scatter_plot;
+        let zeros = new Int32Array(sc.data.num_items());
+        zeros.fill(0);
+        sc.schema.selected.populate(zeros);
+        sc.data.write_to_gl();
+        sc.draw_points();
+    },
+
     mouseDown(evt) {
         this.drag_point = evt.target;
-        this.ctx2d.clearRect(0, 0, this.width, this.height);
         this.freeform = evt.altKey;
+        this.visual_select.clearContext();
         this.visual_select.clearPoints();
         this.visual_select.appendPoint(evt);
     },
 
     mouseUp(evt) {
         this.drag_point = null;
-        this.ctx2d.clearRect(0, 0, this.width, this.height);
+        this.visual_select.clearContext();
     },
 
     mouseMove(evt) {
@@ -85,12 +105,12 @@ SelectionPlot.prototype = {
 
         let self = this;
         function draw_aux() {
-            self.visual_select.clearContext(self.ctx2d);
-            self.visual_select.drawPolygon(self.ctx2d);
-            let [w, h] = [self.width, self.height];
+            self.visual_select.clearContext();
+            self.visual_select.drawPolygon();
+            let [w, h] = self.visual_select.getDims();
 
             // GPU -> CPU
-            let image = self.ctx2d.getImageData(0, 0, w, h);
+            let image = self.visual_select.getImageData();
 
             let schema = self.scatter_plot.schema;
             let gldata = schema.pos.data;

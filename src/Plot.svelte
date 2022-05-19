@@ -1,108 +1,150 @@
 <script>
-  import { onMount } from 'svelte';
-  import SelectionPlot from './selection_plot';
-  let mounted = false;
-  let point_factor = 4;
-  let log10_num_points = "2";
-  let num_points = 100;
-  let num_points_selected = 0;
-  var plot;
+    import { onMount } from 'svelte';
+    import SelectionPlot from './selection_plot';
+    let mounted = false;
+    let show_help = true;
+    let canvas, gl_canvas;
+    let point_factor = 4;
+    let log10_num_points = 2;
+    let num_points = 100;
+    let num_points_selected = 0;
+    let point_size_incr = 0.1;
+    let num_points_incr = 0.05;
+    var plot;
 
-  onMount(async () => {
-    let canvas = document.getElementById('select'); 
-    let gl_canvas = document.getElementById('glcanvas');
+    onMount(async () => {
+        canvas = document.getElementById('select'); 
+        gl_canvas = document.getElementById('glcanvas');
 
-    plot = new SelectionPlot(canvas, gl_canvas);
-    await plot.scatter_plot.initTextures();
-    plot.setPointFactor(point_factor);
-    refresh(log10_num_points);
-    console.log(plot.scatter_plot.scatter_prog.uniforms);
+        plot = new SelectionPlot(canvas, gl_canvas);
+        await plot.scatter_plot.initTextures();
+        plot.setPointFactor(point_factor);
+        refresh(log10_num_points);
 
-    mounted = true;
+        mounted = true;
+        onResize();
 
-  });
+    });
 
-  async function handle(evt) {
-    if (evt.type == 'mousedown') {
-      plot.mouseDown(evt);
-    } else if (evt.type == 'mousemove') {
-      plot.mouseMove(evt);
-    } else if (evt.type == 'mouseup') {
-      plot.mouseUp(evt);
+    function onResize() {
+        if (! mounted) { return; }
+        // console.log(`dims: ${divw},${divh}`);
+        canvas.width = window.innerWidth;
+        gl_canvas.width = window.innerWidth;
+
+        canvas.height = window.innerHeight;
+        gl_canvas.height = window.innerHeight;
+        plot.resizeCanvas();
     }
-    num_points_selected = await plot.getNumSelected();
-  }
 
-  function refresh(log10_num_points) {
-    num_points = parseInt(Math.pow(10, parseFloat(log10_num_points)));
-    plot.refreshData(num_points);
-  }
+    async function handleMouse(evt) {
+        if (evt.type == 'mousedown') {
+            plot.mouseDown(evt);
+        } else if (evt.type == 'mousemove') {
+            plot.mouseMove(evt);
+            num_points_selected = await plot.getNumSelected();
+        } else if (evt.type == 'mouseup') {
+            plot.mouseUp(evt);
+        }
+    }
 
+    function handleKeydown(evt) {
+        let key = evt.key,
+            code = evt.keyCode;
+
+        if (key == 'a') {
+            plot.clearSelection();
+            num_points_selected = 0;
+        } else if (key == 'd') {
+            point_factor -= point_size_incr;
+            plot.setPointFactor(point_factor);
+        } else if (key == 'f') {
+            point_factor += point_size_incr;
+            plot.setPointFactor(point_factor);
+        } else if (key == 'h') {
+            show_help = ! show_help;
+        } else if (key == 'j') {
+            log10_num_points -= num_points_incr;
+        } else if (key == 'k') {
+            log10_num_points += num_points_incr;
+        } else if (code == 32) { // space
+            plot.resetZoom();
+        } else if (code == 13) { // enter
+            plot.refreshData(num_points);
+        }
+    }
+
+    $: num_points = parseInt(Math.pow(10, log10_num_points));
+
+    function refresh(log10_num_points) {
+        plot.refreshData(num_points);
+    }
 
 </script>
 
-<div>
-  <div class='wrapper'>
-    <canvas class='z2' 
-            id="select"
-            width="1000" 
-            height="600"
-            on:mousedown="{handle}"
-            on:mousemove="{handle}"
-            on:mouseup="{handle}">
-    </canvas>
-    <canvas class='z1' id="glcanvas" width="1000" height="600"></canvas>
-  </div>
+<svelte:window on:keydown={handleKeydown} on:resize={onResize}/>
 
-  <div class=''>
-    <div>Number of Data Points: {num_points}</div>
-    <input type=range
-           bind:value={log10_num_points}
-           on:input="{refresh(log10_num_points)}"
-           min=0, max=5 step=0.01>
 
-    <button on:click="{() => refresh(log10_num_points)}">Refresh</button>
+<canvas class='abs z2' 
+        id="select"
+        on:mousedown="{handleMouse}"
+        on:mousemove="{handleMouse}"
+        on:mouseup="{handleMouse}">
+</canvas>
+<canvas class='abs z1' id="glcanvas"></canvas>
 
-    <input type=range
-           bind:value={point_factor}
-           on:input={() => plot.setPointFactor(point_factor)}
-           min=0 max=5 step=0.01>
-           <div>Total selected: {num_points_selected}</div>
-  </div>
-
-  <div class=''>
-    <p>Click and drag in the plot a rectangular or (with Alt held), a freeform
-    area.  Hold down Shift to add to your selection.  Note that it is
-    responsive even with 100k points.  See 
-    <a href="https://github.com/hrbigelow/wij-wemnan">source code</a>
-    for more.
-    </p>
-  </div>
+<div class='abs gray z2 upper-right'>
+    <div># Points: {num_points}</div>
+    <div># Selected: {num_points_selected}</div>
 </div>
 
+{#if show_help}
+    <div class='abs gray z2 lower-right'>
+        <pre style="text-align: left;">
+ h:       toggle help
+ a:       clear select
+ d,f:     point size
+ j,k:     num points
+ [space]: reset zoom
+ [enter]: reload data
+ 
+ drag:     rect select
+ Alt-drag: freeform select
+ +[shift]: add to select
+ two-fingers: zoom in/out
+        </pre>
+         <a href="https://github.com/hrbigelow/wij-wemnan"> source code</a>
+    </div>
+{/if}
 
 <style>
 
-  .z1 {
-    z-index: 1;
-  }
+    .upper-right {
+        top: 10px;
+        right: 10px;
+    }
 
-  .z2 {
-    z-index: 2;
-  }
+    .gray {
+        background-color: rgba(200, 200, 200, 0.5);
+    }
 
-  .wrapper {
-    position: relative;
-    height: 600px;
-  }
+    .lower-right {
+        text-align: center;
+        bottom: 10px;
+        right: 10px;
+    }
 
-  .wrapper canvas {
-    position: absolute;
-  }
+    .abs {
+        position: absolute;
+    }
 
-  canvas {
-    border: 1px solid gray;
-  }
+    .z1 {
+        z-index: 1;
+    }
+
+    .z2 {
+        z-index: 2;
+    }
 
 </style>
 

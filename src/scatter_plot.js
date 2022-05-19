@@ -1,3 +1,4 @@
+import * as tf from '@tensorflow/tfjs';
 import * as glutils from './webgl_utils';
 import scatterV from './shaders/scatter-v.glsl';
 import scatterF from './shaders/scatter-f.glsl';
@@ -59,21 +60,19 @@ function ScatterPlot(gl, viewState) {
     gl.useProgram(this.scatter_prog.prog);
 
     this.resize_dots(); // sets the pointFactor uniform
-    this.zoom(); // sets scale and offset uniforms
 
 };
 
 ScatterPlot.prototype = {
 
     useVisualization() {
-        // if (this.program_in_use === this.scatter_prog) { return; }
         var g = this.gl;
         g.clearColor(1.0, 1.0, 1.0, 1.0);
         g.blendEquationSeparate(g.FUNC_ADD, g.FUNC_ADD);
         g.blendFuncSeparate(g.SRC_ALPHA, g.ONE_MINUS_SRC_ALPHA, g.ONE, g.ONE);
         g.bindFramebuffer(g.FRAMEBUFFER, null);
         g.bindRenderbuffer(g.RENDERBUFFER, null);
-        // g.useProgram(this.scatter_prog.prog);
+        g.useProgram(this.scatter_prog.prog);
         // this.program_in_use = this.scatter_prog;
     },
 
@@ -83,14 +82,14 @@ ScatterPlot.prototype = {
         this.textures_loaded = true;
     },
 
-    // this may require only changing the viewport?
-    zoom() {
+    resize_canvas() {
+        let cnv = this.gl.canvas;
+        this.gl.viewport(0, 0, cnv.width, cnv.height);
+    },
 
-        var xmin = -30, 
-            xmax = 500,
-            ymin = -640,
-            ymax = 12349,
-            Mx = 2 / (xmax - xmin),
+    resetZoom() {
+        let { xmin, xmax, ymin, ymax } = this.data_range;
+        let Mx = 2 / (xmax - xmin),
             My = 2 / (ymax - ymin),
             Bx = -Mx * xmin - 1,
             By = -My * ymin - 1;
@@ -103,7 +102,6 @@ ScatterPlot.prototype = {
         // this.gl.useProgram(this.scatter_prog.prog);
         this.gl.uniform3fv(this.scatter_prog.uniforms.scale, this.viewState.scale);
         this.gl.uniform3fv(this.scatter_prog.uniforms.offset, this.viewState.offset);
-
     },
 
     resize_dots() {
@@ -120,11 +118,26 @@ ScatterPlot.prototype = {
             npoints = vertex_data.length / this.data.stride;
         this.data.adopt_jsbuf(vertex_data);
         this.data.write_to_gl();
-        // console.log(this.schema.shape.export());
+
+        const [mins, maxs] = tf.tidy(() => {
+            let pos_ten = this.schema.pos.export();
+            let maxs = pos_ten.max(0);
+            let mins = pos_ten.min(0);
+            return [maxs, mins];
+        });
+        const [mins_vals, maxs_vals] = [mins.dataSync(), maxs.dataSync()];
+        mins.dispose();
+        maxs.dispose();
+        this.data_range = {
+            xmin: mins_vals[0],
+            xmax: maxs_vals[0],
+            ymin: mins_vals[1],
+            ymax: maxs_vals[1]
+        };
+        this.resetZoom();
     },
 
     draw_points() {
-        // if (! this.textures_loaded) { return; }
         this.useVisualization();
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.drawArrays(this.gl.GL_POINTS, 0, this.data.num_items());

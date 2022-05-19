@@ -21,12 +21,6 @@ void main(void) {
 
     gl_PointSize = size * pointFactor;
 
-    // translate from [-1, 1] clip space coords to [0, 1] in texture
-    // coordinates
-    // vec2 tex_coords = gl_Position.xy / 2.0 + vec2(0.5, 0.5);
-
-    // bool selected = texture2DLod(seltex, tex_coords, 0.0).a != 0.0;
-
     vColor = (selected != 0.0) ? vec4(1.0, 0.0, 0.0, 1.0) : color;
     vShape = shape;
 }

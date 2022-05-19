@@ -13,20 +13,21 @@
 function VisualSelect(ctx2d) {
 
     this.polygon_points = { x:[], y:[] };
-    this.fillStyle = '#EEEEEE';
-    this.strokeStyle = 'gray';
-    this.lineWidth = 1;
-    this.globalAlpha = 0.3; // want transparent selection
-    this.plots = [];
-
-    this.ctx2d = ctx2d;
-    this.setAttributes(this.ctx2d);
+    this.ctx = ctx2d;
+    this.initContext()
 }
 
 VisualSelect.prototype = {
 
-    attachPlot: function(plot) {
-        this.plots.push(plot);
+    initContext: function() {
+        this.ctx.lineWidth = 1;
+        this.ctx.fillStyle = '#EEEEEE';
+        this.ctx.strokeStyle = 'gray'
+        this.ctx.globalAlpha = 0.3;
+    },
+
+    getDims: function() {
+        return [this.ctx.canvas.width, this.ctx.canvas.height];
     },
 
     clearPoints: function() {
@@ -58,23 +59,20 @@ VisualSelect.prototype = {
         this.polygon_points.y[3] = this.polygon_points.y[0];
     },
 
-    setAttributes: function(ctx) {
-        ctx.lineWidth = this.lineWidth;
-        ctx.fillStyle = this.fillStyle;
-        ctx.strokeStyle = this.strokeStyle;
-        ctx.globalAlpha = this.globalAlpha;
-    },
 
+    resize_canvas: function() {
+        this.initContext();
+    },
 
     // initialize variables and attach listeners
-    clearContext: function(ctx) {
-        var w = ctx.canvas.width,
-            h = ctx.canvas.height;
+    clearContext: function() {
+        var w = this.ctx.canvas.width,
+            h = this.ctx.canvas.height;
 
-        ctx.clearRect(0, 0, w, h);
+        this.ctx.clearRect(0, 0, w, h);
     },
 
-    drawPolygon: function(ctx) {
+    drawPolygon: function() {
         let self = this;
 
         function draw_aux() {
@@ -83,18 +81,23 @@ VisualSelect.prototype = {
 
             if (x.length < 2) { return; }
 
-            ctx.moveTo(x[0], y[0]);
-            ctx.beginPath();
+            self.ctx.moveTo(x[0], y[0]);
+            self.ctx.beginPath();
             for (var i = 1; i != x.length; i++) {
-                ctx.lineTo(x[i], y[i]);
+                self.ctx.lineTo(x[i], y[i]);
             }
-            ctx.lineTo(x[0], y[0]);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
+            self.ctx.lineTo(x[0], y[0]);
+            self.ctx.closePath();
+            self.ctx.fill();
+            self.ctx.stroke();
         }
         draw_aux();
         // requestAnimationFrame(draw_aux);
+    },
+
+    getImageData: function() {
+        let [w, h] = this.getDims();
+        return this.ctx.getImageData(0, 0, w, h);
     }
 }
 
