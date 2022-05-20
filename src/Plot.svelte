@@ -29,11 +29,16 @@
     function onResize() {
         if (! mounted) { return; }
         // console.log(`dims: ${divw},${divh}`);
-        canvas.width = window.innerWidth;
-        gl_canvas.width = window.innerWidth;
+        let w = window.innerWidth;
+        let h = window.innerHeight;
+        // w = 100;
+        // h = 100;
 
-        canvas.height = window.innerHeight;
-        gl_canvas.height = window.innerHeight;
+        canvas.width = w; 
+        canvas.height = h;
+
+        gl_canvas.width = w;
+        gl_canvas.height = h; 
         plot.resizeCanvas();
     }
 
@@ -74,6 +79,10 @@
         }
     }
 
+    function handleZoom(evt) {
+        plot.zoom(evt.clientX, evt.clientY, -evt.deltaY);
+    }
+
     $: num_points = parseInt(Math.pow(10, log10_num_points));
 
     function refresh(log10_num_points) {
@@ -87,6 +96,7 @@
 
 <canvas class='abs z2' 
         id="select"
+        on:wheel|passive="{handleZoom}"
         on:mousedown="{handleMouse}"
         on:mousemove="{handleMouse}"
         on:mouseup="{handleMouse}">
@@ -94,12 +104,12 @@
 <canvas class='abs z1' id="glcanvas"></canvas>
 
 <div class='abs gray z2 upper-right'>
-    <div># Points: {num_points}</div>
-    <div># Selected: {num_points_selected}</div>
+    <div>Points: {num_points}</div>
+    <div>Selected: {num_points_selected}</div>
 </div>
 
 {#if show_help}
-    <div class='abs gray z2 lower-right'>
+    <div class='abs light z2 lower-right'>
         <pre style="text-align: left;">
  h:       toggle help
  a:       clear select
@@ -127,6 +137,11 @@
     .gray {
         background-color: rgba(200, 200, 200, 0.5);
     }
+
+    .light {
+        background-color: rgba(250, 250, 250, 0.8);
+    }
+
 
     .lower-right {
         text-align: center;

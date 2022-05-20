@@ -11,16 +11,14 @@ varying float vShape;
 uniform vec3 scale;
 uniform vec3 offset;
 uniform mediump float pointFactor;
-// uniform sampler2D seltex;
 
 void main(void) {
 
     // specified in clip space coordinates.  here they are in [-1, 1]
     gl_Position = vec4(pos * scale + offset, 1.0);
-    gl_Position.y = - gl_Position.y;
-
     gl_PointSize = size * pointFactor;
 
     vColor = (selected != 0.0) ? vec4(1.0, 0.0, 0.0, 1.0) : color;
     vShape = shape;
 }
+

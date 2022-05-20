@@ -54,8 +54,8 @@ SelectionPlot.prototype = {
     },
 
 
-    zoom() {
-        this.scatter_plot.zoom();
+    zoom(px, py, deltaY) {
+        this.scatter_plot.zoom([px, py], deltaY);
     },
 
     setPointFactor(point_factor) {
@@ -107,43 +107,44 @@ SelectionPlot.prototype = {
         function draw_aux() {
             self.visual_select.clearContext();
             self.visual_select.drawPolygon();
-            let [w, h] = self.visual_select.getDims();
-
-            // GPU -> CPU
-            let image = self.visual_select.getImageData();
 
             let schema = self.scatter_plot.schema;
-            let gldata = schema.pos.data;
-            let N = gldata.num_items();
 
             // flattened, in order H, W, C
             // retrieve just the alpha channel
             tf.tidy(() => {
 
-                // CPU -> GPU
-                let region_ten = tf.browser.fromPixels(image, 1);
+                // GPU -> CPU
+                let image = self.visual_select.getImageData();
+
+                // CPU -> GPU, shape: H, W
+                let region_ten = tf.browser.fromPixels(image, 1).squeeze(2);
 
                 // shape: W, H
-                region_ten = region_ten.squeeze(2).transpose([1,0]);
                 region_ten = region_ten.notEqual(0).cast('int32');
+                region_ten = region_ten.transpose([1,0]);
+                // console.log('Num pixels selected: ', region_ten.sum().dataSync()[0]);
+                // console.log(region_ten.sum(0).print());
 
-                // create a tensor of vertex pixel coordinates
-                // shape: N, 2 (but inner dimension is x, y
-                let vertex_ten = schema.pos.export();
-                vertex_ten = vertex_ten.slice([0,0],[-1,2]);
+                let vertex_ten = self.scatter_plot.vertexPixelCoords();
 
-                let scale2 = self.view_state.scale.slice(0, 2);
-                let off2 = self.view_state.offset.slice(0, 2);
-
-                // translate to pixel coordinates
-                // shape N, 2.  N = number of vertices
-                vertex_ten = vertex_ten.mul(scale2).add(off2);
-
-                vertex_ten = vertex_ten.add(1.0).mul([w, h]).div(2.0);
-                vertex_ten = tf.cast(vertex_ten, 'int32');
+                // temporary hack: filter out vertices not in range
+                let above_ten = vertex_ten.greater(region_ten.shape);
+                let below_ten = vertex_ten.less([0, 0]); 
+                let in_bounds_ten = above_ten.logicalOr(below_ten).cast('int32').sum(1).equal(0).cast('int32');
+                vertex_ten = vertex_ten.mul(in_bounds_ten.reshape([-1,1]));
 
                 // perform a gather
                 let mask_ten = tf.gatherND(region_ten, vertex_ten);
+
+                // console.log('Vertex Tensor: ', vertex_ten.shape);
+                // console.log(vertex_ten.dataSync().toString());
+
+                // console.log('Region Tensor: ', region_ten.shape);
+                // console.log(region_ten.dataSync().toString());
+                // console.log('Mask Ten summary');
+                // console.log(mask_ten.dataSync());
+                // console.log('Total: ', mask_ten.sum().dataSync()[0]);
 
                 if (evt.shiftKey) {
                     let current_sel = self.scatter_plot.schema.selected.export();
@@ -154,12 +155,10 @@ SelectionPlot.prototype = {
                 self.scatter_plot.schema.selected.populate(mask_ten.dataSync());
                 self.scatter_plot.data.write_to_gl();
                 self.scatter_plot.draw_points();
-
-                // return mask_ten.sum().dataSync();
               
             });
 
-            console.log('numTensors: ' + tf.memory().numTensors);
+            // console.log('numTensors: ' + tf.memory().numTensors);
             // console.log('numDataBuffers: ' + tf.memory().numDataBuffers);
 
         }

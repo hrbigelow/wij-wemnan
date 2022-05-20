@@ -43,6 +43,8 @@ export default function randomPoints(plot, npoints) {
     for (p = 0; p != attr.length; p += stride) {
         pos = c.randomPos();
         
+        // attr[p + schema.pos.offset] = p;
+        // attr[p + schema.pos.offset + 1] = p;
         attr[p + schema.pos.offset] = pos.x;
         attr[p + schema.pos.offset + 1] = pos.y;
         attr[p + schema.pos.offset + 2] = pos.z;
