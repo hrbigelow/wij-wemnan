@@ -40,10 +40,10 @@ Wij-wemnan is implemented using two overlayed canvases.  One is a WebGL canvas
 where the scatterplot data is plotted.  The second is a 2D canvas which
 supports the user-drawn selection region (using an SVG polygon).  The drawing
 logic for the scatter plot is very straightforward, see [shaders
-folder](https://github.com/hrbigelow/wij-wemnan/tree/master/src/shaders) The
+folder](https://github.com/hrbigelow/wij-wemnan/tree/master/src/shaders).  The
 selection logic makes use of [tfjs](https://github.com/tensorflow/tfjs) GPU
 tensor operations, as implemented in the
-[mouseMove](https://github.com/hrbigelow/wij-wemnan/blob/f2b850eff053f32073ce40c62e11845a00171d87/src/selection_plot.js#L83).
+[mouseMove](https://github.com/hrbigelow/wij-wemnan/blob/f2b850eff053f32073ce40c62e11845a00171d87/src/selection_plot.js#L83)
 handler.  
 
 The flow is as follows.  There are two relevant sizes here.  Pixel data is
