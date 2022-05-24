@@ -96,6 +96,12 @@ SelectionPlot.prototype = {
     mouseUp(evt) {
         this.drag_point = null;
         this.visual_select.clearContext();
+        let current_sel = this.scatter_plot.schema.selected.export();
+
+        // convert all 1 and 2 to 1
+        current_sel = current_sel.squeeze(1).notEqual(0).cast('int32');
+        this.scatter_plot.schema.selected.populate(current_sel.dataSync());
+        this.scatter_plot.data.write_to_gl();
     },
 
     mouseMove(evt) {
@@ -147,9 +153,19 @@ SelectionPlot.prototype = {
                 // console.log('Total: ', mask_ten.sum().dataSync()[0]);
 
                 if (evt.shiftKey) {
+                    // values of current_sel
+                    // 0 -> not selected, 
+                    // 1 -> selected from previous regions
+                    // 2 -> selected from active region, 
+                    // 3 -> both previous and active regions
                     let current_sel = self.scatter_plot.schema.selected.export();
                     current_sel = current_sel.squeeze(1).cast('int32');
-                    mask_ten = mask_ten.maximum(current_sel);
+
+                    // find values 1 or 3 (selected from previous region)
+                    let prev_sel = current_sel.mod(2).equal(1).cast('int32');
+
+                    // add in current selection 
+                    mask_ten = prev_sel.add(mask_ten.mul(2));
                 }
 
                 self.scatter_plot.schema.selected.populate(mask_ten.dataSync());
